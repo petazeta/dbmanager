@@ -1,0 +1,11 @@
+<?php include("includes/templates/butdelete.php"); ?>
+<?php include("includes/templates/butedit.php"); ?>
+<?php include("includes/templates/butdeletelink.php"); ?>
+<?php include("includes/templates/butaddnodelink.php"); ?>
+<?php include("includes/templates/butaddnode.php"); ?>
+<?php include("includes/templates/nochildren.php"); ?>
+<?php include("includes/templates/buteditlink.php"); ?>
+<?php include("includes/templates/butvchpos.php"); ?>
+<?php include("includes/templates/buthchpos.php"); ?>
+<?php include("includes/templates/formgeneric.php"); ?>
+<?php include("includes/templates/admnbuts.php"); ?>
