@@ -5,7 +5,7 @@
 	<label class="form-label"></label>
 	<script>thisElement.innerHTML=thisNode.editpropertyname;</script>
 	<span></span>
-	<script>thisElement.innerHTML=thisNode.properties[thisNode.editpropertyname] || websectionsroot.getRelationship({name: "websections_domelements"}).getChild({name: "emptyvallabel"}).properties.innerHTML;</script>
+	<script>thisElement.innerHTML=thisNode.properties[thisNode.editpropertyname] || "Not any value";</script>
 	<div class="btrightedit"></div>
 	<script>
 	  var launcher=new NodeMale();
