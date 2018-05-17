@@ -71,53 +71,6 @@ function showtree(tablename) {
     });
   });
 }
-function showtree_old(tablename) {
- /*  It displays the table registers and it relationship tree
-      If the table is indexed within itself it will show just the unlinked registers, that is: the root registers
- */
-  myalert.getTp("includes/templates/alert.php", function() {
-    myalert.myTp=myalert.xmlTp; //For error alerts
-    myrootmother=new NodeFemale();
-    myrootmother.properties.childtablename=tablename;
-    myrootmother.properties.parenttablename=tablename;
-    //Loading the template for relationships node
-    myrootmother.getTp("includes/templates/femaletp.php", function(){
-      myrootmother.relTp=myrootmother.xmlTp;
-      //Loading the template for normal node
-      myrootmother.getTp("includes/templates/nodepolifields.php", function(){
-        myrootmother.childTp=myrootmother.xmlTp;
-        myrootmother.getTp("includes/templates/singlefield.php", function() {
-          myrootmother.colTp=myrootmother.xmlTp;
-          myrootmother.getTp("includes/templates/addnewnode.php", function(){
-          myrootmother.addnewnodeTp=myrootmother.xmlTp;
-          //while childTp is template for the complet row. colTp is template for every column/database field
-            //We must load the root node.
-            //To do it correctly we will get the data from the relationship that it comes from
-            //We will do it by emulating a father and then loading its relationship
-            //The relationship that is a relationship between its table will be the one we are searching for
-            var myForm=document.getElementById("formgenerictp").content.querySelector("form").cloneNode(true);
-	    myForm.action="dbrequesttbrecords.php";
-            myForm.elements.parameters.value=JSON.stringify({action:"load this relationship"});
-            myrootmother.setView(myForm); //footfather's mother has the information of the table: that is needed for the loading
-            myrootmother.loadfromhttp(myForm, function(){
-              var loadedroot=function(){
-                myrootmother.refreshChildrenView(document.getElementById("treecontainer"), myrootmother.childTp);
-              };
-              //Now that we have the relationship we have to load the root element
-              if (myrootmother.properties.id) var jsonparameters={action: "load unlinked"};
-              else var jsonparameters={action: "load all"};
-	      var myForm=document.getElementById("formgenerictp").content.querySelector("form").cloneNode(true);
-	      myForm.action="dbrequesttbrecords.php";
-              myForm.elements.parameters.value=JSON.stringify(jsonparameters);
-              myrootmother.setView(myForm);
-              myrootmother.loadfromhttp(myForm, loadedroot);
-            });
-          });
-        });
-      });
-    });
-  });
-};
 </script>
   </body>
 </html>
