@@ -13,7 +13,7 @@ This software implements a database content manager system that works for databa
 **************
 1. Upload the files to your web server.
 2. Unpack it to the destination folder.
-3. Edit database settings from your database at: core/includes/config.sample.php and rename it to config.php. 
+3. Edit database settings from your database at: includes/config.sample.php and rename it to config.php. 
 
 *****************
 *Getting started*
