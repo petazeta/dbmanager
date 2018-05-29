@@ -4,15 +4,13 @@
       <img src="includes/css/images/expander.png"/>
     </a>
     <script>
-      var myform=document.getElementById("formgeneric").cloneNode(true);
-      myform.elements.parameters.value=JSON.stringify({action:"load my children"});
-      thisNode.setView(myform);
       thisElement.onclick=function() {
 	this.style.display="none";
 	this.parentElement.querySelectorAll("a")[1].style.display="inline";
-	thisNode.loadfromhttp(myform, function() {
+	thisNode.loadfromhttp({action:"load my children"}, function() {
 	  this.addEventListener("refreshChildrenView", function() {
-	    if (this.children==0){
+	    if (this.children==0 || !this.children[0].properties.id){
+	      this.children=[];
 	      var element=this.addChild(new NodeMale());
 	      element.refreshView(thisElement.parentElement.querySelector("UL"), document.getElementById("nochildrentp"));
 	    }

@@ -11,36 +11,26 @@
       var launcher=new Alert();
       launcher.myTp=thisElement.parentElement.querySelector("template").content.cloneNode(true);
       launcher.myNode=thisNode;
-      launcher.showalert();launcher
+      launcher.showalert();
       return false;
     }
   </script>
   <template>
     <div class="alert">
       <p>The list of candidates is printed below</p>
+      <div></div>
       <template>
-	<form action="dbrequesttbrecords.php" style="display:none">
-	  <input type="hidden" name="json">
-	  <script>
-	    var myparentdata=new NodeFemale();
-	    myparentdata.loadasc(thisNode.parentNode, 1);
-	    thisElement.value=JSON.stringify(myparentdata);
-	  </script>
-	  <input type="hidden" name="parameters" value="">
-	</form>
 	<form action="dbrequest.php">
 	  <select name="newid"></select>
 	  <script>
 	    var loadCandidatesNode=new NodeFemale();
-	    var loadCandidatesForm=closesttagname.call(thisElement, "FORM").previousElementSibling;
-	    if (thisNode.parentNode.properties.parentunique!=0) var parameters={action: "load unlinked"};
-	    else var parameters={action: "load all"};
-	    parameters.user_id=webuser.properties.id;
-	    loadCandidatesForm.elements.parameters.value=JSON.stringify(parameters);
-	    loadCandidatesNode.loadfromhttp(loadCandidatesForm, function() {
+	    loadCandidatesNode.loadasc(thisNode.parentNode, 1);
+	    var parameters={user_id: webuser.properties.id};
+	    if (thisNode.parentNode.properties.parentunique!=0) parameters.action="load unlinked";
+	    else parameters.action="load all";
+	    loadCandidatesNode.loadfromhttp(parameters, function() {
 	      loadCandidatesNode.refreshChildrenView(thisElement, "includes/templates/reloption.php");
 	    });
-	    
 	  </script>
 	  <input type="hidden" name="json">
 	  <script>
@@ -91,9 +81,7 @@
       var launcher=thisNode;
       var thisNode=launcher.myNode;
       thisNode.myAlert=launcher;
-      var myFormTp=thisElement.querySelector("template").content.cloneNode(true);
-      thisNode.setView(myFormTp);
-      thisElement.insertBefore(myFormTp, thisElement.querySelector("template"));
+      thisNode.refreshView(thisElement.querySelector("template").previousElementSibling, thisElement.querySelector("template"));
     </script>
   </template>
 </template>

@@ -8,7 +8,6 @@ require('includes/database_tables.php');
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
     <script type="text/javascript" src="includes/javascript/nodes.js"></script>
-    <script type="text/javascript" src="includes/javascript/nodesextra.js"></script>
     <script type="text/javascript" src="includes/javascript/dommethods.js"></script>
     <script type="text/javascript" src="includes/javascript/alert.js"></script>
     <link rel="stylesheet" type="text/css" href="includes/css/main.css">
@@ -21,7 +20,6 @@ require('includes/database_tables.php');
     </div>
     <ul id="treecontainer" class=""></ul>
 <script type="text/javascript">
-document.body.appendChild(document.getElementById("formgenerictp").content.querySelector("form").cloneNode(true));
 var webuser=new NodeMale();
 webuser.loadedses=true;
 webuser.isWebAdmin=function(){
@@ -30,11 +28,7 @@ webuser.isWebAdmin=function(){
 webuser.addEventListener=function(){};
 var myalert=new Alert();
 var tablesmother=new NodeFemale();
-var myForm=document.getElementById("formgeneric").cloneNode(true);
-myForm.setAttribute("action","dbrequesttbrecords.php");
-myForm.elements.parameters.value=JSON.stringify({action: "load tables"});
-tablesmother.setView(myForm);
-document.body.appendChild(myForm);
+
 var stdTables=JSON.parse('<?php echo json_encode($standardTables); ?>');
 stdTables.forEach(function(tableName){
   var myTable=new NodeMale();
@@ -42,31 +36,25 @@ stdTables.forEach(function(tableName){
   tablesmother.children.push(myTable);
 });
 
-  tablesmother.refreshChildrenView(document.getElementById("tablescontainer"), "includes/templates/table.php");
- //just created the relationship we start again the function
+tablesmother.refreshChildrenView(document.getElementById("tablescontainer"), "includes/templates/table.php");
+//just created the relationship we start again the function
 
 
 function showtree(tablename) {
   myrootmother=new NodeFemale();
   myrootmother.properties.childtablename="TABLE_" + tablename.toUpperCase();
   myrootmother.properties.parenttablename="TABLE_" + tablename.toUpperCase();
-  //We must load the root node.
-  //To do it correctly we will get the data from the relationship that it comes from
-  //We will do it by emulating a father and then loading its relationship
-  //The relationship that is a relationship between its table will be the one we are searching for
-  var myForm=document.getElementById("formgeneric").cloneNode(true);
-  myForm.setAttribute("action","dbrequesttbrecords.php");
-  myForm.elements.parameters.value=JSON.stringify({action:"load this relationship"});
-  myrootmother.setView(myForm); //footfather's mother has the information of the table: that is needed for the loading
-  myrootmother.loadfromhttp(myForm, function(){
+  var FD = new FormData();
+  FD.append("json", JSON.stringify(myrootmother));
+  FD.append("parameters", JSON.stringify({action:"load this relationship"}));
+  myrootmother.loadfromhttp(FD, function(){
     //Now that we have the relationship we have to load the root element
     if (myrootmother.properties.id) var jsonparameters={action: "load unlinked"};
     else var jsonparameters={action: "load all"};
-    var myForm=document.getElementById("formgeneric").cloneNode(true);
-    myForm.setAttribute("action","dbrequesttbrecords.php");
-    myForm.elements.parameters.value=JSON.stringify(jsonparameters);
-    myrootmother.setView(myForm);
-    myrootmother.loadfromhttp(myForm, function(){
+    var FD = new FormData();
+    FD.append("json", JSON.stringify(myrootmother));
+    FD.append("parameters", JSON.stringify(jsonparameters));
+    myrootmother.loadfromhttp(FD, function(){
       myrootmother.refreshChildrenView(document.getElementById("treecontainer"), "includes/templates/maletp.php");
     });
   });
