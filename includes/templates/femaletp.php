@@ -7,6 +7,7 @@
       thisElement.onclick=function() {
 	this.style.display="none";
 	this.parentElement.querySelectorAll("a")[1].style.display="inline";
+	thisNode.children=[];
 	thisNode.loadfromhttp({action:"load my children"}, function() {
 	  this.addEventListener("refreshChildrenView", function() {
 	    if (this.children==0 || !this.children[0].properties.id){

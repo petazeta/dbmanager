@@ -7,6 +7,7 @@ require('includes/database_tables.php');
 <!DOCTYPE html>
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+    <script type="text/javascript" src="includes/javascript/config.js"></script>
     <script type="text/javascript" src="includes/javascript/nodes.js"></script>
     <script type="text/javascript" src="includes/javascript/dommethods.js"></script>
     <script type="text/javascript" src="includes/javascript/alert.js"></script>
