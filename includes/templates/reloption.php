@@ -7,7 +7,7 @@
       if(thisNode.properties.hasOwnProperty(key)) {
 	var value=thisNode.properties[key];
 	if (value.length > 40) value=value.substring(0, 10) + "...";
-	fields.push(key + ": " + thisNode.properties[key]);
+	fields.push(key + ": " + value);
       }
     });
     thisElement.value=thisNode.properties.id;
