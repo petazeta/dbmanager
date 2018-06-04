@@ -18,7 +18,7 @@
   <template>
     <div class="alert">
       <p>The list of candidates is printed below</p>
-      <form action="dbrequest.php">
+      <form>
 	<select name="newid"></select>
 	<script>
 	  //normalize

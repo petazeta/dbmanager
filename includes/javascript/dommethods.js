@@ -77,9 +77,10 @@ function intoColumns(tableElement, elements, cellsNumber) {
   var myCell=tableElement.rows[0].cells[0].cloneNode();
   tableElement.innerHTML='';
   while (elements.firstElementChild) {
+    if (!elements.firstElementChild.tagName) continue;
     var newRow=myRow.cloneNode();
     tableElement.appendChild(newRow);
-    if (cellsNumber < 1) {
+    if (cellsNumber == 0) {
       while (elements.firstElementChild) {
 	var newCell=myCell.cloneNode();
 	newCell.style.width=cellsWidth;
@@ -95,6 +96,10 @@ function intoColumns(tableElement, elements, cellsNumber) {
 	var newCell=myCell.cloneNode();
 	newCell.style.width=cellsWidth;
 	newCell.appendChild(elements.firstElementChild);
+	//don't forget the element script
+	if (elements.firstElementChild && elements.firstElementChild.tagName=="SCRIPT") {
+	  newCell.appendChild(elements.firstElementChild);
+	}
 	newRow.appendChild(newCell);
       }
       else {

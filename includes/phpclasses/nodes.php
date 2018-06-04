@@ -59,6 +59,23 @@ class Node {
     $this->db_loadmytree();
     $this->db_deletemytree_proto();
   }
+  function session($sesname, $action="load") {
+    switch ($action) {
+      case "load":
+	if (!isset($_SESSION[$sesname])) return false;
+	$data=unserialize($_SESSION[$sesname]);
+	$this->load($data);
+	$this->loadasc($data);
+	break;
+      case "write":
+	$_SESSION[$sesname]=serialize($this);
+	break;
+      case "check":
+	if (isset($_SESSION[$sesname])) return true;
+	return false;
+	break;
+    }
+  }
 }
 
 class NodeFemale extends Node{
@@ -228,7 +245,13 @@ class NodeFemale extends Node{
     }
     else if ($this->partnerNode && $this->partnerNode->db_loadmytreeup($level)===false) return false;
   }
-
+  function db_insertmytree($level=null) {
+    if ($level===0) return true;
+    if ($level) $level--;
+    for ($j=0; $j<count($this->children); $j++) {
+      if ($this->children[$j]->db_insertmytree($level)===false) return false;
+    }
+  }
   function db_loadroot() {
     $sql = 'SELECT r.* FROM '
     . TABLE_RELATIONSHIPS . ' r'
@@ -491,9 +514,11 @@ class NodeMale extends Node{
   }
 
   function db_insertmyself() {
+    $myecho=null;
     $myproperties=get_object_vars($this->properties);
+    if (isset($myproperties['id'])) unset($myproperties['id']);
     foreach ($myproperties as $key => $value) {
-      $myproperties[$key]='"' . $value . '"';
+      $myproperties[$key]='\'' .  mysql_escape_string($value) . '\'';
     }
     $sql = 'INSERT INTO '
       . constant($this->parentNode->properties->childtablename)
@@ -509,7 +534,6 @@ class NodeMale extends Node{
     }
     return true;
   }
-  
   function db_insertmylink() {
     if ($this->db_setmylink()===false) return false;
     $parentTableOriginalName=strtolower(substr($this->parentNode->properties->parenttablename, 6));
@@ -528,10 +552,8 @@ class NodeMale extends Node{
     if ($level===0) return true;
     if ($level) $level--;
     if ($this->db_insertmyself()===false) return false;
-    for ($i=0; $i<count($this->relationships); $i++)  {
-      for ($j=0; $j<count($this->relationships[$i]->children); $j++)  {
-        if ($this->relationships[$i]->children[$j]->db_insertmytree($level)===false) return false;
-      }
+    for ($i=0; $i<count($this->relationships); $i++) {
+      $this->relationships[$i]->db_insertmytree($level);
     }
   }
   
@@ -605,9 +627,10 @@ class NodeMale extends Node{
       //We update the fields
       //First we search for the updatable fields
       $myproperties=get_object_vars($this->properties);
+      if (isset($myproperties['id'])) unset($myproperties['id']);
       $setSentences=array();
       foreach ($myproperties as $key =>$value) {
-        array_push($setSentences, $key . '=' . '"' . mysql_escape_string($value) . '"');
+        array_push($setSentences, $key . '=' . '\'' . mysql_escape_string($value) . '\'');
       }
       $sql = 'UPDATE '.
         constant($this->parentNode->properties->childtablename)  .

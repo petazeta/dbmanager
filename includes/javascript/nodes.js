@@ -94,6 +94,13 @@ Node.prototype.toRequestFormData=function(parameters) {
     case "load my tree up":
       var node=new this.constructor;
       node.load(this,1);
+      node.avoidrecursion();
+      node.loadasc(this,2);
+      break;
+    case "add my tree":
+      var node=new this.constructor;
+      node.load(this);
+      node.avoidrecursion();
       node.loadasc(this,2);
       break;
     case "load all":
@@ -352,7 +359,7 @@ Node.prototype.loadfromhttp=function (request, reqlistener) {
       var request=this.toRequestFormData(request);
       request.action=myAction;
     }
-    if (!request.action) request.action=Config.dbRequestFilePath;
+    if (!request.action) request.action=Config.requestFilePath;
     xmlhttp.open("POST",request.action, true);
     if (request.tagName=="FORM") {
       xmlhttp.send(new FormData(request));
@@ -362,16 +369,14 @@ Node.prototype.loadfromhttp=function (request, reqlistener) {
     }
   }
 };
-Node.prototype.addEventListener=function (eventName, listenerFunction, id) {
+Node.prototype.addEventListener=function (eventsNames, listenerFunction, id) {
   if (!this.events) this.events={};
-  if (!this.events[eventName]) this.events[eventName]=[];
-  /*
-  var matchfound=false;
-  this.events[eventName].forEach(function(func) {
-    if (func.toString()==listenerFunction.toString()) matchfound=true;
-  });*/
+  if (!Array.isArray(eventsNames)) eventsNames=[eventsNames];
   if (id) listenerFunction.id=id;
-  this.events[eventName].push(listenerFunction);
+  for (var i=0; i<eventsNames.length; i++) {
+    if (!this.events[eventsNames[i]]) this.events[eventsNames[i]]=[];
+    this.events[eventsNames[i]].push(listenerFunction);
+  }
 }
 Node.prototype.removeEventListener=function (eventName, id) {
   if (this.events && this.events[eventName]) {
@@ -562,6 +567,7 @@ NodeMale.prototype.load=function(source, level) {
 }
 
 NodeMale.prototype.getNextChild=function(obj) {
+  if (!obj) return this.relationships[0].children[0];
   return this.relationships[0].getChild(obj);
 }
 NodeMale.prototype.appendNextChildren=function(container, tp, reqlistener, append) {

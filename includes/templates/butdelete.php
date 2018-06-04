@@ -26,7 +26,7 @@
 	</tr>
 	<tr>
 	  <td>
-	    <form action="dbrequest.php">
+	    <form>
 	      <table style="margin:auto;">
 		<tr>
 		  <td>

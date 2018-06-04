@@ -54,10 +54,10 @@
 		  admnlauncher.myNode=thisNode;
 		  admnlauncher.buttons=[];
 		  if (thisNode.sort_order && thisNode.parentNode.children.length>1) admnlauncher.buttons.push({template: document.getElementById("butvchpostp")});
-		  if (!(thisNode.parentNode.properties.childunique==1 && thisNode.properties.id) && !(thisNode.parentNode.properties.childtablelocked==1)) admnlauncher.buttons.push({template: document.getElementById("butaddnewnodetp")});
+		  if (!(thisNode.parentNode.properties.childunique==1 && thisNode.properties.id) && !(thisNode.parentNode.properties.childtablelocked==1)) admnlauncher.buttons.push({template: document.getElementById("butaddnewnodetp"), args:{sort_order: thisNode.sort_order + 1}});
 		  if (!thisNode.parentNode.properties.childtablelocked==1) admnlauncher.buttons.push({template: document.getElementById("butdeletetp")});
 		  if (thisNode.parentNode.partnerNode) admnlauncher.buttons.push({template: document.getElementById("butdeletelinktp")});
-		  if (!(thisNode.parentNode.properties.childunique==1 && thisNode.properties.id) && thisNode.parentNode.partnerNode) admnlauncher.buttons.push({template: document.getElementById("butaddnodelinktp")});
+		  if (!(thisNode.parentNode.properties.childunique==1 && thisNode.properties.id) && thisNode.parentNode.partnerNode) admnlauncher.buttons.push({template: document.getElementById("butaddnodelinktp"), args:{sort_order: thisNode.sort_order + 1}});
 		  if (thisNode.parentNode.partnerNode) admnlauncher.buttons.push({template: document.getElementById("buteditlinktp")});
 		  admnlauncher.refreshView(thisElement, document.getElementById("admnbutstp"));
 		}
