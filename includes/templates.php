@@ -1,10 +1,20 @@
-<?php include("includes/templates/butdelete.php"); ?>
-<?php include("includes/templates/butedit.php"); ?>
-<?php include("includes/templates/butdeletelink.php"); ?>
-<?php include("includes/templates/butaddnodelink.php"); ?>
-<?php include("includes/templates/butaddnewnode.php"); ?>
-<?php include("includes/templates/nochildren.php"); ?>
-<?php include("includes/templates/buteditlink.php"); ?>
-<?php include("includes/templates/butvchpos.php"); ?>
-<?php include("includes/templates/buthchpos.php"); ?>
-<?php include("includes/templates/admnbuts.php"); ?>
+<template>
+<?php
+//Load all files from folder includes/templates
+//add to the template the id=filename
+$dir    = 'includes/templates';
+$dir='templates';
+$tpfiles = array_diff(scandir($dir), array('..', '.'));
+foreach ($tpfiles as $key => $value) {
+  $pos = strpos($value, '.');
+  $filename = substr($value, 0, $pos);
+  $template=file_get_contents($dir . '/' . $value);
+  $pos=strpos($template, '<template>');
+  if ($pos!==false) {
+    //echo "$pos";
+    $template=substr_replace($template, "<template id='tp$filename'>", $pos, strlen('<template>'));
+  }
+  echo $template . "\n";
+}
+?>
+</template>

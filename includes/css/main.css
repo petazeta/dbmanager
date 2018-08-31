@@ -18,6 +18,12 @@ table{border-collapse:collapse;}
 	position: absolute;
 	top:-100%;
 }
+.btmiddleright{
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateX(100%) translateY(-50%);
+}
 .adminlauncher {
   position: relative;
   display: inline-block;

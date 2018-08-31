@@ -5,12 +5,10 @@
   <script>
     // Onclick the + image we display the rel options pop up
     //normalize
-    var launcher=thisNode;
-    var thisNode=launcher.myNode;
     thisElement.onclick=function() {
       var launcher=new Alert();
+      launcher.thisNode=thisNode;
       launcher.myTp=thisElement.parentElement.querySelector("template").content.cloneNode(true);
-      launcher.myNode=thisNode;
       launcher.showalert();
       return false;
     }
@@ -22,29 +20,12 @@
 	<select name="id"></select>
 	<script>
 	  //normalize
-	  var launcher=thisNode;
-	  var thisNode=launcher.myNode;
-	  var loadCandidatesNode=new NodeFemale();
-	  loadCandidatesNode.loadasc(thisNode.parentNode, 1);
-	  var parameters={user_id: webuser.properties.id};
-	  if (thisNode.parentNode.properties.parentunique!=0) parameters.action="load unlinked";
-	  else parameters.action="load all";
-	  loadCandidatesNode.loadfromhttp(parameters, function() {
-	    loadCandidatesNode.refreshChildrenView(thisElement, "includes/templates/reloption.php");
+	  var launcher=thisNode.thisNode;
+	  var loadCandidatesNode=launcher.thisParent.cloneNode(1, 0); //partner is necesary
+	  loadCandidatesNode.loadfromhttp({user_id: webuser.properties.id, action: "load unlinked"}, function() {
+	    this.refreshChildrenView(thisElement, "includes/templates/reloption.php");
 	  });
 	</script>
-	<input type="hidden" name="json">
-	<script>
-	  //normalize
-	  var launcher=thisNode;
-	  var thisNode=launcher.myNode;
-	  var mydata=new NodeMale();
-	  mydata.parentNode=new NodeFemale();
-	  mydata.parentNode.loadasc(thisNode.parentNode, 1);
-	  if (thisNode.sort_order) mydata.sort_order=thisNode.sort_order+1;
-	  thisElement.value=JSON.stringify(mydata);
-	</script>
-	<input type="hidden" name="parameters" value="" data-js='thisElement.value=JSON.stringify({action:"add my link", user_id: webuser.properties.id});'/>
 	<table class="mytable" style="margin-top:11px;">
 	  <tr>
 	    <td>
@@ -57,25 +38,18 @@
       <script>
 	//normalize
 	var launcher=thisNode;
-	var thisNode=launcher.myNode;
-	thisElement.onsubmit=function() {
-	  var myresult=new NodeMale();
-	  var thisParent=thisNode.parentNode;
-	  myresult.loadfromhttp(this, function(){
-	    if (myresult.extra && myresult.extra.error===true) {
-	      alert("error adding link");
-	      return false;
-	    }
-	    var myselect=thisElement.getElementsByTagName("select")[0];
-	    var addelement=myselect.options[myselect.selectedIndex].myNode;
-	    if (!thisNode.properties.id) thisParent.children=[];
-	    else addelement.sort_order=thisNode.sort_order+1;
+	var thisParent=launcher.thisNode.thisParent;
+	var myselect=thisElement.getElementsByTagName("select")[0];
+	thisElement.addEventListener("submit", function(ev) {
+	  ev.preventDefault();
+	  var addelement=myselect.options[myselect.selectedIndex].thisNode;
+	  addelement.loadfromhttp({action: "add my link", user_id: webuser.properties.id}, function(){
 	    thisParent.addChild(addelement);
 	    thisParent.refreshChildrenView();
 	  });
 	  launcher.hidealert();
 	  return false;
-	};
+	});
 	thisElement.elements.exit.onclick=function(){
 	  launcher.hidealert();
 	}

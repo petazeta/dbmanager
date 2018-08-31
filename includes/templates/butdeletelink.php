@@ -5,21 +5,17 @@
   <script>
     //Normalize
     var launcher=thisNode;
-    var thisNode=launcher.myNode;
-    var thisParent=thisNode.parentNode;
-    thisElement.onclick=function() {
+    var thisNode=launcher.thisNode;
+    thisElement.addEventListener("click", function(ev) {
+      ev.preventDefault();
       var myresult=new NodeMale();
       thisNode.loadfromhttp({action:"delete my link", user_id: webuser.properties.id}, function(){
-	if (thisNode.extra && thisNode.extra.error===true) {
-	  alert("error deleting link");
-	  return false;
-	}
-	thisParent.removeChild(thisNode);
-	thisParent.refreshChildrenView();
-	thisParent.dispatchEvent("deleteNode", [thisNode]);
-	thisNode.dispatchEvent("deleteNode");
+	this.parentNode.removeChild(this);
+	//for no children add a eventlistener to refreshChildrenView event
+	if (this.parentNode.childContainer) this.parentNode.refreshChildrenView();
+	this.parentNode.dispatchEvent("deleteNode", [this]);
+	this.dispatchEvent("deleteNode");
       });
-      return false;
-    }
+    });
   </script>
 </template>

@@ -20,7 +20,6 @@ if (array_key_exists("partnerNode", $json)) $myelement=new NodeFemale();
 else $myelement=new NodeMale();
 
 $myelement->load($json);
-$myelement->loadasc($json);
 
 unset($fields["json"]);
 unset($fields["parameters"]);
@@ -31,10 +30,18 @@ switch ($parameters->action) {
     $myexecfunction="db_loadmyself";
     $callback="cutUp";
     break;
+  case "load tables":
+    $myexecfunction="db_loadtables";
+    $callback="cutUp";
+    break;
   case "load my children":
     $myexecfunction="db_loadmychildren";
     $filter=null; $order=null; $limit = null;
     if (isset($parameters->filter)) $filter=$parameters->filter;
+    if (isset($parameters->language)) {
+      if (!$filter) $filter=[];
+      $filter['_languages'] = $parameters->language;
+    }
     if (isset($parameters->order)) $order=$parameters->order;
     if (isset($parameters->limit)) $limit=$parameters->limit;
     if ($filter || $order || $limit) $argument=[$filter, $order, $limit];
@@ -46,11 +53,17 @@ switch ($parameters->action) {
     break;
   case "load my tree":
     $myexecfunction="db_loadmytree";
-    if (isset($parameters->deepLevel)) $argument=$parameters->deepLevel;
+    $deepLevel=null; $filter=null;
+    if (isset($parameters->deepLevel)) $deepLevel=$parameters->deepLevel;
+    if (isset($parameters->language)) {
+      $filter=['_languages' => $parameters->language];
+    }
+    if ($deepLevel || $filter) $argument=[$deepLevel, $filter];
     $callback="cutUp";
     break;
   case "load my partner":
     $myexecfunction="db_loadmypartner";
+    if (isset($parameters->child_id)) $argument=$parameters->child_id;
     $callback="cutDown";
     break;
     
@@ -72,11 +85,23 @@ switch ($parameters->action) {
     break;
   case "add myself":
     $myexecfunction="db_insertmyself";
-    if (isset($parameters->sort_order)) $argument=$parameters->sort_order;
+    if (isset($parameters->language)) $argument=[ ['_languages' => $parameters->language] ];
+    $callback=["cutDown", "cutUp"];
+    break;
+  case "add my children":
+    $myexecfunction="db_insertmychildren";
+    if (isset($parameters->language)) $argument=[ ['_languages' => $parameters->language] ];
     $callback=["cutDown", "cutUp"];
     break;
   case "add my tree":
     $myexecfunction="db_insertmytree";
+    $deepLevel=null; $extra=null;
+    if (isset($parameters->deepLevel)) $deepLevel=$parameters->deepLevel;
+    if (isset($parameters->language)) {
+      if (!$extra) $extra=[];
+      $extra['_languages'] = $parameters->language;
+    }
+    if ($deepLevel || $extra) $argument=[$deepLevel, $extra];
     $callback=["cutUp"];
     break;
   case "add my link":
@@ -91,6 +116,10 @@ switch ($parameters->action) {
     $myexecfunction="db_deletemytree";
     $callback=["cutDown", "cutUp"];
     break;
+  case "delete my children":
+    $myexecfunction="db_deletemychildren";
+    $callback=["cutDown", "cutUp"];
+    break;
   case "delete my link":
     $myexecfunction="db_deletemylink";
     $callback=["cutDown", "cutUp"];
@@ -102,12 +131,12 @@ switch ($parameters->action) {
     break;
   case "edit my properties":
     $myexecfunction="db_updatemyproperties";
+    if (isset($parameters->properties)) $argument=$parameters->properties;
     $callback=["cutDown", "cutUp"];
     break;
   case "replace myself":
     $myexecfunction="db_replacemyself";
-    $argument=$myelement->properties->newid;
-    unset($myelement->properties->newid);
+    if (isset($parameters->newid)) $argument=$parameters->newid;
     $callback=["cutDown", "cutUp"];
     break;
   case "load unlinked":

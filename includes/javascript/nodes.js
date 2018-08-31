@@ -1,3 +1,5 @@
+var templatesCache=[];
+
 function Properties() {
 }
 Properties.prototype.cloneFromArray = function(obj, clone) {
@@ -29,123 +31,146 @@ function Node() {
   //optional variable this.extra
 }
 
-Node.prototype.load=function(source) {
+Node.prototype.load=function(source, thisProperties) {
   if (typeof source=="string") source=JSON.parse(source);
-  if (source.properties)
-    this.properties.cloneFromArray(source.properties);
+  if (source.properties) {
+    if (thisProperties) {
+      if (typeof thisProperties=="string") thisProperties=[thisProperties];
+      var myProperties={};
+      for (var i=0; i<thisProperties.length; i++) {
+	if (Object.keys(source.properties).indexOf(thisProperties[i])!=-1) {
+	  myProperties[thisProperties[i]]=source.properties[thisProperties[i]];
+	}
+      }
+      this.properties.cloneFromArray(myProperties);
+    }
+    else this.properties.cloneFromArray(source.properties);
+  }
   if (source.extra) this.extra=source.extra;
+}
+Node.prototype.cloneNode=function(levelup, leveldown, thisProperties, thisPropertiesUp, thisPropertiesDown) {
+  var myClon=new this.constructor();
+  myClon.load(this, levelup, leveldown, thisProperties, thisPropertiesUp, thisPropertiesDown);
+  return myClon;
+}
+
+Node.prototype.loaddesc=function(source) {
+  if (typeof source=="string") source=JSON.parse(source);
+  return source;
 }
 Node.prototype.loadasc=function(source) {
   if (typeof source=="string") source=JSON.parse(source);
-  if (source.properties)
-    this.properties.cloneFromArray(source.properties);
-  if (source.extra) this.extra=source.extra;
-}
-Node.prototype.cloneNode=function(level) {
-  if (level!==true) level=false;
-  var myClon=new this.constructor();
-  myClon.load(this, level);
-  return myClon;
+  return source;
 }
 Node.prototype.getTp=function (tpHref, reqlistener) {
-  var xmlhttp=new XMLHttpRequest();
-  var thisNode=this;
-  xmlhttp.onload=function() {
-    var container=document.createElement("template");
-    container.innerHTML=this.responseText;
-    if (container.content.querySelector("template")) thisNode.xmlTp=container.content.querySelector("template").content;
-    else thisNode.xmlTp=container.content;
-    if (reqlistener) {
-      reqlistener.call(thisNode);
+  if (supportsTemplate() && Config.loadTemplatesAtOnce!==false) {
+    var tpid="tp" + tpHref.match(/\/(\w+)\..+/, '$1')[1];
+    if (document.getElementById(tpid)) {
+      var newElement=document.getElementById(tpid).cloneNode(true);
+      newElement.id=null;
+      this.xmlTp=getTpContent(newElement);
+      if (reqlistener) {
+	reqlistener.call(this);
+      }
+      this.dispatchEvent("getTp");
+      return;
     }
-    thisNode.dispatchEvent("onGetTp");
   }
-  xmlhttp.open("GET",tpHref,true);
-  xmlhttp.send();
+  function getTpCache(tpHref) {
+    var cached=false;
+    for (var i=0; i<templatesCache.length; i++) {
+      if (templatesCache[i].href==tpHref) {
+	cached=templatesCache[i].value;
+	break;
+      }
+    }
+    return cached;
+  }
+  var cached=false;
+  if (Config.templatesCacheOn!==false) {
+    cached=getTpCache(tpHref);
+  }
+  if (cached) {
+    this.xmlTp=cached.cloneNode(true);
+  }
+  else {
+    var thisNode=this;
+    var xmlhttp;
+    if (window.XMLHttpRequest) {
+      // code for IE7+, Firefox, Chrome, Opera, Safari
+      xmlhttp = new XMLHttpRequest();
+    }
+    else {
+      // code for IE6, IE5
+      xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.onload=function() {
+      var container=document.createElement("template");
+      container.innerHTML=this.responseText;
+      //When the tp content is just a template we get that tp content
+      if (getTpContent(container).querySelectorAll("template").length==1) thisNode.xmlTp=getTpContent(getTpContent(container).querySelector("template"));
+      else thisNode.xmlTp=getTpContent(container);
+      var newTp={};
+      newTp[tpHref]=thisNode.xmlTp.cloneNode(true);
+      if (Config.templatesCacheOn!==false) {
+	templatesCache.push(newTp);
+      }
+      if (reqlistener) {
+	reqlistener.call(thisNode);
+      }
+      thisNode.dispatchEvent("getTp");
+    }
+    xmlhttp.open("GET",tpHref + "?<?=time()?>",true);
+    xmlhttp.send();
+  }
 };
+Node.prototype.avoidrecursion=function(){
+  if (this.extra) this.extra=null;
+}
 Node.prototype.toRequestFormData=function(parameters) {
   switch (parameters.action) {
-    case "load myself":
-    case "load my children":
-    case "load my relationships":
-    case "load my tree":
+    case "load unlinked":
     case "load my partner":
+    case "load root":
+    case "load this relationship":
+    case "load my childtablekeys":
+    case "load all":
+    case "load tables":
+      var node=this.cloneNode(0, 0);
+      break;
+    case "load my relationships":
+    case "load my children not":
+    case "load my children":
+    case "load my tree":
     case "delete my tree":
-    case "add myself":
+    case "delete my children":
+    case "load myself":
+      var node=this.cloneNode(1, 0, "id", "id");
+      break;
     case "edit my sort_order":
     case "delete my link":
-    case "load unlinked":
-    case "load my children not":
-      var node=new this.constructor;
-      node.loadasc(this,2);
+    case "add my link":
+      var node=this.cloneNode(2, 0, "id", "id"); //we need the parent->partner
+      break;
+    case "add myself":
+      var node=this.cloneNode(2, 0, null, "id"); //we need the parent->partner
       break;
     case "edit my properties":
-      var node=new this.constructor;
-      node.loadasc(this,2); //needs to for safety module
-      break;
-    case "load my childtablekeys":
-    case "load root":
-    case "myself":
-    case "load this relationship":
-      var node=new this.constructor;
-      node.load(this, 0);
+      var node=this.cloneNode(1, 0, null, "id");
       break;
     case "load my parent":
     case "load my tree up":
-      var node=new this.constructor;
-      node.load(this,1);
-      node.avoidrecursion();
-      node.loadasc(this,2);
+      var node=this.cloneNode(1, 1, "id");
       break;
     case "add my tree":
-      var node=new this.constructor;
-      node.load(this);
-      node.avoidrecursion();
-      node.loadasc(this,2);
-      break;
-    case "load all":
-      var node=new this.constructor;
-      node.loadasc(this,1);
-      break;
-    case "with asc":
-      var node=new this.constructor;
-      node.loadasc(this,2);
-      break;
-    case "just asc":
-      var node=new this.constructor;
-      node.loadasc(this,2);
-      //next line is not good
-      node.properties.forEach(function(property){
-	delete(property);
-      });
-      break;
-    case "all":
-      var node=new this.constructor;
-      node.load(this);
-      node.avoidrecursion();
-      node.loadasc(this,3);
+      var node=this.cloneNode(2, null, null, "id"); //we need the parent->partner
       break;
     default:
-      var node=new this.constructor;
-      node.load(this);
-      node.avoidrecursion();
-      node.loadasc(this);
-  }
-  //we make a criv of properties not needed
-  if (parameters.action!="add myself" && parameters.action!="edit my properties") {
-    var myPointer=node;
-    while (myPointer) {
-      if (myPointer.constructor.name=="NodeMale") {
-	var nodeId=myPointer.properties.id;
-	myPointer.properties=new Properties();
-	myPointer.properties.id=nodeId;
-	myPointer=myPointer.parentNode;
-      }
-      else myPointer=myPointer.partnerNode;
-    }
+      var node=this.cloneNode();
   }
   var FD = new FormData();
   // Push our data into our FormData object
+  node.avoidrecursion();
   FD.append("json", JSON.stringify(node));
   FD.append("parameters", JSON.stringify(parameters));
   return FD;
@@ -156,34 +181,56 @@ Node.prototype.toRequestFormData=function(parameters) {
 //node.render(domelement), node.render(scriptelement)
 Node.prototype.render = function (tp) {
   if (!tp) tp=this.myTp;
+  if (tp.nodeType==3 && tp.tagName=="TEMPLATE" && supportsTemplate()) {
+    tp=tp.content; //templates are not valid just its content
+  }
   var elementsToBeModified=[];
   var myElements=[];
-  myElements.push(tp);
-  myElements=myElements.concat(Array.from(tp.querySelectorAll("*"))); //inner elements
-  for (var i=0; i<myElements.length; i++) {
-    if (myElements[i].tagName=="SCRIPT") {
-      //To avoid script execution limitation for XMLHttpRequest we make a copy of the script to a "brand new" script node
-      //Also to execute script <script> for an already loaded element when we use render
-      var myScript=document.createElement("SCRIPT");
-      var scriptTop="var thisElement=document.currentScript.previousElementSibling; var thisNode=document.currentScript.thisNode;";
-      myScript.textContent="(function(){" + scriptTop + myElements[i].textContent + "})();"; //adding scope (encapsulation) so this variables are local and can't be modified from another scripts.
-      myScript.thisNode=this;
-      var container=myElements[i].parentNode;  //!!Document Fragment is not an Element => *parentNode*
-      container.insertBefore(myScript, myElements[i])
-      container.removeChild(myElements[i]);
-      continue;
-    }
-    if (typeof myElements[i].getAttribute != 'function') continue;
-    if (typeof myElements[i].getAttribute("data-js")!="string" || !myElements[i].getAttribute("data-js")) continue;
-    var execeval=function(thisNode,thisElement,myjs) {
-      try {
-        eval(myjs);
-      } catch(e) {
-        var err = e.constructor(e.message + ' (Error in Evaled Script) '  + '\nScript content: \n' + myjs);
-        throw err;
+  //myElements.push(tp); //To get the outerHTML in case there is not template DEPRECATED
+  myElements=Array.from(tp.querySelectorAll("SCRIPT")); //inner elements
+  //document.thisScript=[];
+  //get inside Tps
+  if (!supportsTemplate()) {
+    //We still dont execute scripts inside of cascading templates (IE)
+    var inTps=tp.querySelectorAll("TEMPLATE");
+    if (inTps.length) {
+      console.log(inTps.length, inTps);
+      for (var i=1; i<inTps.length; i++) { //we exclude the master tp cause somehow querySelectorAll(template) get it also
+	var inTpElements=Array.from(inTps[i].querySelectorAll("SCRIPT"));
+	for (var k=0; k<inTpElements.length; k++) {
+	  var pos=myElements.indexOf(inTpElements[k]);
+	  if (pos!=-1) {
+	    console.log("encontrado", myElements[pos], myElements.length);
+	    myElements.splice(pos, 1);
+	  }
+	}
       }
     }
-    execeval(this,myElements[i],myElements[i].getAttribute("data-js")); //this way we will have a local copy of node and element so if there are onclick=funcion(){thisElement... it will get the correct one)
+  }
+  for (var i=0; i<myElements.length; i++) {  
+    //To avoid script execution limitation for XMLHttpRequest we make a copy of the script to a "brand new" script node
+    //Also to execute script <script> for an already loaded element when we use render
+    var myScript=document.createElement("SCRIPT");
+    if (document.currentScript===undefined) { //IE
+      var currTime= new Date().getTime();
+      function getRandomInt(max) {
+	return Math.floor(Math.random() * Math.floor(max));
+      }
+      var uniqueId=currTime + getRandomInt(99999);
+      uniqueId=uniqueId.toString(32);
+      myScript.id=uniqueId;
+      var scriptTop="var thisScript=document.getElementById('" + uniqueId + "');"; 
+    }
+    else {
+      var scriptTop="var thisScript=document.currentScript;";
+    }
+    scriptTop +="var thisElement=thisScript.previousElementSibling; var thisNode=thisScript.thisNode;"
+    myScript.textContent="(function(){" + scriptTop + myElements[i].textContent + "})();"; //adding scope (encapsulation) so this variables are local and can't be modified from another scripts.
+    myScript.thisNode=this;
+    //document.thisScript.push(myScript);
+    var container=myElements[i].parentNode;  //!!Document Fragment is not an Element => *parentNode*
+    container.insertBefore(myScript, myElements[i])
+    container.removeChild(myElements[i]);
   }
   return tp;
 };
@@ -200,10 +247,12 @@ Node.prototype.refreshView=function (container, tp, myReqlistener) {
 };
 
 Node.prototype.appendThis=function (container, tp, reqlistener) {
-  if (container) this.myContainer=container;
   var refresh=function() {
     var clone=this.myTp.cloneNode(true);
     this.render(clone);
+    if (container) {
+      this.myContainer=container;
+    }
     this.myContainer.appendChild(clone);
     if (reqlistener) {
       reqlistener.call(this);
@@ -212,13 +261,15 @@ Node.prototype.appendThis=function (container, tp, reqlistener) {
   };
   if (typeof tp=="string") {
     this.getTp(tp, function() {
-      this.myTp=this.xmlTp;
+      this.myTp=this.xmlTp.cloneNode(true);
       refresh.call(this);
     });
   }
   else {
     if (tp) {
-      if (tp.tagName && tp.tagName=="TEMPLATE") tp=tp.content;
+      if (tp.tagName && tp.tagName=="TEMPLATE") {
+	tp=getTpContent(tp);
+      }
       this.myTp=tp;
     }
     refresh.call(this);
@@ -246,7 +297,7 @@ Node.prototype.appendProperties = function (container, tp, reqlistener) {
   }
   else {
     if (tp) {
-      if (tp.tagName && tp.tagName=="TEMPLATE") tp=tp.content;
+      if (tp.tagName && tp.tagName=="TEMPLATE") tp=getTpContent(tp);
       this.propertyTp=tp;
     }
     refresh.call(this);
@@ -260,14 +311,14 @@ Node.prototype.appendProperties = function (container, tp, reqlistener) {
       var myKeys=[];
       Object.keys(this.properties).forEach(function(key){
 	if (!myThis.properties.isProperty(myThis.properties, key)) return false;
-	var index=myKeys.push({})-1;
-	myKeys[index].Field=key;
+	myKeys.push(key);
       });
     }
-    myKeys.forEach(function(tableKey){
-      if (tableKey.Field=="id") return false;
-      myThis.editpropertyname=tableKey.Field; //for knowing the key and for the edition facility
+    myKeys.forEach(function(key){
+      if (key=="id") return false;
+      myThis.editpropertyname=key; //for knowing the key and for the edition facility
       var thiscol=myThis.propertyTp.cloneNode(true);
+      thiscol.firstElementChild.setAttribute("data-property", key);
       myThis.render(thiscol); //we must refresh the filling of the data also cloneNode does not copy extra function and data
       container.appendChild(thiscol);
     });
@@ -309,10 +360,14 @@ Node.prototype.appendChildren=function (container, tp, reqlistener) {
   var refresh=function(){
     var renderedChildren=this.renderChildren();
     if (renderedChildren) this.childContainer.appendChild(renderedChildren);
-    if (reqlistener) {
-      reqlistener.call(this);
-    }
-    this.dispatchEvent("appendChildren");
+    //Lets give some time for the scripts appended to be executed
+    var myNode=this;
+    window.setTimeout(function(){
+      if (reqlistener) {
+	reqlistener.call(myNode);
+      }
+      myNode.dispatchEvent("appendChildren");
+    }, 1000);
   };
   if (typeof tp=="string") {
     this.getTp(tp, function() {
@@ -322,63 +377,147 @@ Node.prototype.appendChildren=function (container, tp, reqlistener) {
   }
   else {
     if (tp) {
-      if (tp.tagName && tp.tagName=="TEMPLATE") tp=tp.content;
+      if (tp.tagName && tp.tagName=="TEMPLATE") tp=getTpContent(tp);
       this.childTp=tp;
     }
     refresh.call(this);
   }
 };
 
+Node.prototype.writeProperty=function(container, property, attribute, onEmptyValueText) {
+  if (!onEmptyValueText) onEmptyValueText=Config.onEmptyValueText;
+  var myAttribute="innerHTML"; //by default
+  if (container.tagName=="INPUT") myAttribute="value";
+  if (attribute) myAttribute=attribute;
+  if (!property) {
+    property=this.getFirstPropertyKey();
+  }
+  if (!this.properties[property] && this.properties[property]!==0) {
+    if (this.parentNode && this.parentNode.childtablekeys) {
+      var pos = this.parentNode.childtablekeys.indexOf(property);
+      if (pos!=-1 && this.parentNode.childtablekeystypes[pos].indexOf("int")!=-1) {
+	//Is a integer
+	container[myAttribute]="0";
+      }
+      else {
+	container[myAttribute]=onEmptyValueText;
+      }
+    }
+    else {
+      container[myAttribute]=onEmptyValueText;
+    }
+  }
+  else {
+    container[myAttribute]=this.properties[property];
+  }
+}
+
+Node.prototype.getFirstPropertyKey=function(){
+  var keys;
+  if (this.parentNode && this.parentNode.childtablekeys && this.parentNode.childtablekeys.length>0) {
+    keys=this.parentNode.childtablekeys;
+  }
+  else {
+    keys=Object.keys(this.properties);
+  }
+  for (var i=0; i<keys.length; i++) {
+    if (keys[i]!="id") {
+      return keys[i];
+    }
+  }
+}
+
 //It loads a node tree from a php script that privides it in json format
-Node.prototype.loadfromhttp=function (request, reqlistener) {
-  var xmlhttp=new XMLHttpRequest();
+Node.prototype.loadfromhttp=function (requestData, reqlistener) {
+  var xmlhttp;
+  if (window.XMLHttpRequest) {
+    // code for IE7+, Firefox, Chrome, Opera, Safari
+    xmlhttp = new XMLHttpRequest();
+  }
+  else {
+    // code for IE6, IE5
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+  }
   var thisNode=this;
+  var request=null, requesterFile=null, requestAction=null;
   xmlhttp.addEventListener('load', function() {
-    console.log(this.responseText);
-    var responseobj=JSON.parse(this.responseText);
-    if (typeof responseobj=="object") {
-      thisNode.load(responseobj);
-      thisNode.loadasc(responseobj);
+    try {
+      var responseobj=JSON.parse(this.responseText);
+    }
+    catch(err) {
+      console.log(requesterFile, requestAction);
+      var parcialRes=this.responseText.replace(/.+\n/g,"");
+      console.log(this.responseText);
+      console.log(JSON.parse(parcialRes));
+      throw err;
+    }
+    thisNode.load(responseobj);
+    if (Config.logRequests==true) {
+      var childtablename= responseobj.properties && responseobj.properties.childtablename ? responseobj.properties.childtablename :
+      (responseobj.parentNode && responseobj.parentNode.properties && responseobj.parentNode.childtablename) ?
+      responseobj.parentNode.properties.childtablename : null;
+      
+      console.log(requesterFile);
+      if (childtablename) console.log(childtablename.substr(6));
+      if (requestAction) console.log(requestAction);
+      console.log(responseobj);
+      console.log(thisNode);
     }
     if (reqlistener) {
       reqlistener.call(thisNode);
     }
     thisNode.dispatchEvent("loadfromhttp");
+    if (responseobj.extra && responseobj.extra.error==true) {
+      console.log("Error response", requesterFile, requestAction);
+      console.log(responseobj, this.responseText);
+    }
   });
-  xmlhttp.addEventListener('error', function(event) {
-    alert('Oops! Something went wrong with the XMLHttpRequest.');
-  });
+  xmlhttp.onreadystatechange=function() {  
+    if (xmlhttp.readyState==4 && xmlhttp.status!==200) {     
+      alert('Oops! Something went wrong with the XMLHttpRequest.');
+    }
+  }
   xmlhttp.overrideMimeType("application/json");
-  if (typeof request=="string") {
-    xmlhttp.open("GET", request, true);
+  if (typeof requestData=="string") { //request with no data or with ?vars
+    requesterFile=requestData;
+    xmlhttp.open("GET", requesterFile, true);
     xmlhttp.send();
   }
-  else if (typeof request=="object") {
-    if (request.constructor === Object) {
-      var myAction= request.requesterFile;
-      var request=this.toRequestFormData(request);
-      request.action=myAction;
+  else if (typeof requestData=="object") {
+    if (requestData.constructor === Object) {
+      requesterFile=requestData.requesterFile;
+      request=this.toRequestFormData(requestData);
+      requestAction=requestData.action;
     }
-    if (!request.action) request.action=Config.requestFilePath;
-    xmlhttp.open("POST",request.action, true);
-    if (request.tagName=="FORM") {
-      xmlhttp.send(new FormData(request));
+    else if (requestData.tagName=="FORM") {
+      requesterFile=requestData.action;
+      request=new FormData(requestData);
     }
-    else {
-      xmlhttp.send(request); //sending just formData (archives)
+    else { //it is formdata
+      request=requestData;
+      requesterFile=requestData.action;
     }
+    if (!requesterFile) requesterFile=Config.requestFilePath;
+    
+    xmlhttp.open("POST",requesterFile, true);
+    xmlhttp.send(request); //sending just formData (archives)
   }
 };
-Node.prototype.addEventListener=function (eventsNames, listenerFunction, id) {
+Node.prototype.addEventListener=function (eventsNames, listenerFunction, label) {
+  if (label) var id=this.produceEventId(label);
   if (!this.events) this.events={};
   if (!Array.isArray(eventsNames)) eventsNames=[eventsNames];
   if (id) listenerFunction.id=id;
   for (var i=0; i<eventsNames.length; i++) {
+    if (id && this.eventExists(eventsNames[i], id)) {
+      continue;
+    }
     if (!this.events[eventsNames[i]]) this.events[eventsNames[i]]=[];
     this.events[eventsNames[i]].push(listenerFunction);
   }
 }
-Node.prototype.removeEventListener=function (eventName, id) {
+Node.prototype.removeEventListener=function (eventName, label) {
+  var id=this.produceEventId(label);
   if (this.events && this.events[eventName]) {
     var i=this.events[eventName].length;
     while(i--) {
@@ -388,10 +527,33 @@ Node.prototype.removeEventListener=function (eventName, id) {
     }
   }
 }
+Node.prototype.eventExists=function (eventName, id) {
+  if (this.events && this.events[eventName]) {
+    var i=this.events[eventName].length;
+    while(i--) {
+      if (this.events[eventName][i].id==id) {
+	return true;
+      }
+    }
+  }
+  return false;
+}
+Node.prototype.produceEventId=function (label) {
+  //produce a unique identifier to recognize te event
+  var evId=false;
+  if (this.constructor.name=="NodeFemale") {
+    evId=this.properties.parenttablename + this.properties.childtablename + label;
+  }
+  else {
+    evId=this.properties.id + label;
+  }
+  return evId;
+}
 Node.prototype.dispatchEvent=function (eventName, args) {
   if (this.events && this.events[eventName]) {
     var i=this.events[eventName].length;
     while(i--) {
+      if (typeof this.events[eventName][i]!="function") console.log("no funcion " + this.events[eventName][i]);
       this.events[eventName][i].apply(this, args);
     }
   }
@@ -402,14 +564,53 @@ Node.prototype.getMyDomNodes=function () {
     //Get index
     var index=this.parentNode.children.indexOf(this);
     var length=1;
-    if (!this.parentNode.childTp.tagName) length=this.parentNode.childTp.children.length; //there is a fragment
+    if (this.parentNode.childTp.nodeType==11) { //document fragment
+      length=this.parentNode.childTp.childNodes.length; //there is a fragment. IE doesn't support children property
+      for (var i=0; i<this.parentNode.childTp.childNodes.length; i++) {
+	if (this.parentNode.childTp.childNodes[i].nodeType!=1) length--;
+      }
+    }
+    var elements=Array.from(this.parentNode.childContainer.children);
+    for (var i=0; i<elements.length; i++) {
+      if (elements[i].tagName=="SCRIPT") elements.splice(i,1);
+    }
+    if (elements.length==1 && this.parentNode.children.length>1) {
+      //in this case we are wrapped the elements in a table
+      if (elements[0].tagName=="TABLE") {
+	var myTable=elements[0];
+	elements=[];
+	for (var i=0; i<myTable.rows.length; i++) {
+	  for (var j=0; j<myTable.rows[i].cells.length; j++) {
+	    elements.push(myTable.rows[i].cells[j]);
+	  }
+	}
+      }
+    }
     var startindex=index*length;
-    var endindex=startindex+length;
-    return Array.from(this.parentNode.childContainer.children).slice(startindex,endindex);
+    var endindex=startindex + length;
+    return elements.slice(startindex, endindex);
   }
   else if (this.myContainer) {
       return Array.from(this.myContainer.children);
   }
+  else if (this.childContainer) {
+      return Array.from(this.childContainer.children);
+  }
+}
+Node.prototype.arrayFromTree=function () {
+  var container=[];
+  container.push(this);
+  if (this.constructor==NodeFemale) {
+    for (var i=0; i<this.children.length; i++) {
+      container=container.concat(this.children[i].arrayFromTree());
+    }
+  }
+  else {
+    for (var i=0; i<this.relationships.length; i++) {
+      container=container.concat(this.relationships[i].arrayFromTree());
+    }
+  }
+  return container;
 }
 
 function NodeFemale() {
@@ -417,60 +618,113 @@ function NodeFemale() {
   this.partnerNode=null;
   this.children=[];
   this.childtablekeys=[];
+  this.childtablekeystypes=[];
+  this.syschildtablekeys=[];
+  this.syschildtablekeysinfo=[];
   this.childTp=null;
   this.childContainer=null;
 }
 NodeFemale.prototype=Object.create(Node.prototype);
 NodeFemale.prototype.constructor=NodeFemale;
 
-NodeFemale.prototype.load=function(source, level) {
-  Node.prototype.load.call(this, source);
+NodeFemale.prototype.load=function(source, levelup, leveldown, thisProperties, thisPropertiesUp, thisPropertiesDown) {
+  Node.prototype.load.call(this, source); //No thisProperties filter for females
   if (source.childtablekeys) {
     for (var i=0;i<source.childtablekeys.length;i++) {
-      this.childtablekeys[i]=new Properties();
-      this.childtablekeys[i].cloneFromArray(source.childtablekeys[i]);
+      this.childtablekeys[i]=source.childtablekeys[i];
     }
   }
-  if (level==0) return false;
+  if (source.childtablekeystypes) {
+    for (var i=0;i<source.childtablekeystypes.length;i++) {
+      this.childtablekeystypes[i]=source.childtablekeystypes[i];
+    }
+  }
+  if (source.syschildtablekeys) {
+    for (var i=0;i<source.syschildtablekeys.length;i++) {
+      this.syschildtablekeys[i]=source.syschildtablekeys[i];
+    }
+  }
+  if (source.syschildtablekeysinfo) {
+    for (var i=0;i<source.syschildtablekeysinfo.length;i++) {
+      this.syschildtablekeysinfo[i]=source.syschildtablekeysinfo[i];
+    }
+  }
+  if (levelup !== 0 && !(levelup < 0)) { //level null and undefined like infinite
+    this.loadasc(source, levelup, thisPropertiesUp);
+  }
+  if (leveldown !== 0 && !(leveldown < 0)) {
+    this.loaddesc(source, leveldown, thisPropertiesDown);
+  }
+}
+
+NodeFemale.prototype.loaddesc=function(source, level, thisProperties) {
+  source=Node.prototype.loaddesc.call(this, source);
+  if (level===0) return false;
   if (level) level--;
   if (!source.children) return false;
   for (var i=0;i<source.children.length;i++) {
     this.children[i]=new NodeMale;
     this.children[i].parentNode=this;
-    this.children[i].load(source.children[i], level);
+    this.children[i].load(source.children[i], 0, 0, thisProperties);
+    this.children[i].loaddesc(source.children[i], level, thisProperties);
   }
 }
 
-NodeFemale.prototype.loadasc=function(source, level) {
-  Node.prototype.loadasc.call(this, source);
-  if (source.childtablekeys) {
-    for (var i=0;i<source.childtablekeys.length;i++) {
-      this.childtablekeys[i]=new Properties();
-      this.childtablekeys[i].cloneFromArray(source.childtablekeys[i]);
-    }
-  }
+NodeFemale.prototype.loadasc=function(source, level, thisProperties) {
+  source=Node.prototype.loadasc.call(this, source);
   if (!source.partnerNode) return false;
-  if (level==0) return false;
+  if (level===0) return false;
   if (level) level--;
   if (Array.isArray(source.partnerNode)) {
     if (!Array.isArray(this.partnerNode)) this.partnerNode=[this.partnerNode];
     for (var i=0; i < source.partnerNode.length; i++) {
       this.partnerNode[i]=new NodeMale();
-      this.partnerNode[i].loadasc(source.partnerNode[i], level);
+      this.partnerNode[i].load(source.partnerNode[i], 0, 0, thisProperties);
+      this.partnerNode[i].loadasc(source.partnerNode[i], level, thisProperties);
     }
   }
   else {
     if (!this.partnerNode) this.partnerNode=new NodeMale();
-    this.partnerNode.loadasc(source.partnerNode, level);
+    this.partnerNode.load(source.partnerNode, 0, 0, thisProperties);
+    this.partnerNode.loadasc(source.partnerNode, level, thisProperties);
   }
 }
 
-NodeFemale.prototype.avoidrecursion=function () {
-  this.partnerNode=null;
-  for (var i=0;i<this.children.length;i++) {
-    this.children[i].avoidrecursion();
+NodeFemale.prototype.avoidrecursion=function(){
+  Node.prototype.avoidrecursion.call(this);
+  if (this.partnerNode) {
+    if (Array.isArray(this.partnerNode)) {
+      this.partnerNode.forEach(function (pNode) {
+	pNode.avoidrecursionup();
+      });
+    }
+    else {
+      this.partnerNode.avoidrecursionup();
+    }
   }
-};
+  this.children.forEach(function(child) {
+    child.avoidrecursiondown();
+  });
+}
+NodeFemale.prototype.avoidrecursiondown=function(){
+  Node.prototype.avoidrecursion.call(this);
+  this.partnerNode=null;
+  this.children.forEach(function(child) {
+    child.avoidrecursiondown();
+  });
+}
+NodeFemale.prototype.avoidrecursionup=function(){
+  Node.prototype.avoidrecursion.call(this);
+  this.children=[];
+  if (this.partnerNode) {
+    if (Array.isArray(this.partnerNode)) {
+      this.parentNode.forEach(function(pNode) {
+	pNode.avoidrecursionup();
+      });
+    }
+    else this.partnerNode.avoidrecursionup();
+  }
+}
 
 NodeFemale.prototype.getrootnode=function() {
   if (!this.partnerNode) return this;
@@ -534,6 +788,7 @@ NodeFemale.prototype.addChild=function(obj) {
 };
 
 NodeFemale.prototype.getChild=function(obj) {
+  if (!obj) return this.children[0];
   var keyname=Object.keys(obj)[0];
   var i= this.children.length;
   while(i--) {
@@ -553,63 +808,134 @@ NodeMale.prototype=Object.create(Node.prototype);
 NodeMale.prototype.constructor=NodeMale;
 
   //It loads data from a json string or an object
-NodeMale.prototype.load=function(source, level) {
-  Node.prototype.load.call(this, source);
+NodeMale.prototype.load=function(source, levelup, leveldown, thisProperties, thisPropertiesUp, thisPropertiesDown) {
+  Node.prototype.load.call(this, source, thisProperties);
   if (source.sort_order) this.sort_order=Number(source.sort_order);
-  if (level==0) return false;
+  if (levelup !== 0 && !(levelup < 0)) { //level null and undefined like infinite
+    this.loadasc(source, levelup, thisPropertiesUp);
+  }
+  if (leveldown !== 0 && !(leveldown < 0)) {
+    this.loaddesc(source, leveldown, thisPropertiesDown);
+  }
+}
+NodeMale.prototype.loaddesc=function(source, level, thisProperties) {
+  source=Node.prototype.loaddesc.call(this, source);
+  if (source.sort_order) this.sort_order=Number(source.sort_order);
+  if (level===0) return false;
   if (level) level--;
   if (!source.relationships) return false;
   for (var i=0;i<source.relationships.length; i++) {
     this.relationships[i]=new NodeFemale();
     this.relationships[i].partnerNode=this;
-    this.relationships[i].load(source.relationships[i], level);
+    this.relationships[i].load(source.relationships[i], 0, 0, thisProperties);
+    this.relationships[i].loaddesc(source.relationships[i], level, thisProperties);
   }
 }
 
 NodeMale.prototype.getNextChild=function(obj) {
-  if (!obj) return this.relationships[0].children[0];
   return this.relationships[0].getChild(obj);
 }
 NodeMale.prototype.appendNextChildren=function(container, tp, reqlistener, append) {
   return this.relationships[0].appendChildren(container, tp, reqlistener, append);
 }
 
-NodeMale.prototype.loadasc=function(source, level) {
-  Node.prototype.loadasc.call(this, source);
+NodeMale.prototype.loadasc=function(source, level, thisProperties) {
+  source=Node.prototype.loadasc.call(this, source);
   if (source.sort_order) this.sort_order=Number(source.sort_order);
   if (!source.parentNode) return false;
-  if (level==0) return false;
+  if (level===0) return false;
   if (level) level--;
   if (Array.isArray(source.parentNode)) {
     if (!Array.isArray(this.parentNode)) this.parentNode=[this.parentNode];
     for (var i=0; i < source.parentNode.length; i++) {
       this.parentNode[i]=new NodeFemale();
-      this.parentNode[i].loadasc(source.parentNode[i], level);
+      this.parentNode[i].load(source.parentNode[i], 0, 0, thisProperties);
+      this.parentNode[i].loadasc(source.parentNode[i], level, thisProperties);
     }
   }
   else {
     if (!this.parentNode) this.parentNode=new NodeFemale();
-    this.parentNode.loadasc(source.parentNode, level);
+    this.parentNode.load(source.parentNode,0,0,thisProperties);
+    this.parentNode.loadasc(source.parentNode, level, thisProperties);
   }
 }
 
-NodeMale.prototype.avoidrecursion=function () {
-  this.parentNode=null;
-  for (var i=0;i<this.relationships.length;i++) {
-    this.relationships[i].avoidrecursion();
+NodeMale.prototype.avoidrecursion=function() {
+  Node.prototype.avoidrecursion.call(this);
+  if (this.parentNode) {
+    if (Array.isArray(this.parentNode)) {
+      this.partnerNode.forEach(function(pNode){
+	pNode.avoidrecursionup();
+      });
+    }
+    else this.parentNode.avoidrecursionup();
   }
-};
-
-NodeMale.prototype.cloneRelationship=function() {
-  var relClon=this.parentNode.cloneNode();
-  this.relationships[0]=relClon;
-  this.relationships[0].partnerNode=this;
-  return this.relationships[0];
+  this.relationships.forEach(function(rel) {
+    rel.avoidrecursiondown();
+  });
+}
+NodeMale.prototype.avoidrecursionup=function(){
+  Node.prototype.avoidrecursion.call(this);
+  this.relationships=[];
+  if (this.parentNode) {
+    if (Array.isArray(this.parentNode)) {
+      this.partnerNode.forEach(function(pNode){
+	pNode.avoidrecursionup();
+      });
+    }
+    else this.parentNode.avoidrecursionup();
+  }
+}
+NodeMale.prototype.avoidrecursiondown=function(){
+  Node.prototype.avoidrecursion.call(this);
+  this.parentNode=null;
+  this.relationships.forEach(function(rel){
+    rel.avoidrecursiondown();
+  });
+}
+NodeMale.prototype.cloneRelationship=function(){
+  return this.cloneRelationships(null, "parent")[0];
+}
+NodeMale.prototype.cloneRelationships=function(selecting, keyword) {
+  if (typeof selecting=="string") selecting={name: selecting};
+  if (!selecting) {
+    selecting={};
+  }
+  var cloned=[];
+  switch (keyword) {
+    case "all":
+      for (var i=0; i<this.parent.partner.relationships.length; i++) {
+	cloned[i]=this.parent.partner.relationships[i].cloneNode(0);
+      }
+      break;
+    case "parent":
+      cloned[0]=this.parentNode.cloneNode(0);
+      break;
+    default:
+      for (var i=0; i<this.parentNode.partnerNode.relationships.length; i++) {
+	var keys=Object.keys(selecting);
+	var passed=true;
+	for (var j=0; j<keys.length; j++) {
+	  if (this.parentNode.partnerNode.relationships[i].properties[keys[j]]!=selecting[keys[j]]) {
+	    passed=false
+	    break;
+	  }
+	}
+	if (passed) cloned.push(this.parentNode.partnerNode.relationships[i].cloneNode(0));
+      }
+  }
+  //We don't everwrite existing rels (push)
+  for (var i=0; i<cloned.length; i++) {
+    this.relationships.push(cloned[i]);
+    cloned[i].partnerNode=this;
+  }
+  return this.relationships;
 };
 
 NodeMale.prototype.addRelationship=function(rel) {
   this.relationships.push(rel);
   rel.partnerNode=this;
+  return rel;
 }
 
 NodeMale.prototype.getrootnode=function() {
@@ -618,6 +944,7 @@ NodeMale.prototype.getrootnode=function() {
 }
 
 NodeMale.prototype.getRelationship=function(obj) {
+  if (!obj) return this.relationships[0];
   if (typeof obj == "string") obj={name: obj};
   var keyname=Object.keys(obj)[0];
   var i= this.relationships.length;

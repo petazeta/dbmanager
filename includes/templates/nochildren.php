@@ -1,16 +1,24 @@
-<template id="nochildrentp">
-  <div style="text-align:center;" class="adminlauncherfix"></div>
+<template>
+  <div class="adminlauncherfix"></div>
   <script>
-    if (webuser.isWebAdmin()) {
-      var admnlauncher=new NodeMale();
-      admnlauncher.myNode=thisNode;
-      admnlauncher.buttons=[];
-      if (!(thisNode.parentNode.properties.childtablelocked==1)) admnlauncher.buttons.push({template: document.getElementById("butaddnewnodetp")});
-      admnlauncher.buttons.push({template: document.getElementById("butaddnodelinktp")});
-      admnlauncher.refreshView(thisElement, document.getElementById("admnbutstp"));
-    }
-    else {
-      thisElement.innerHTML='';
-    }
+    var launcher=thisNode;
+    var thisNode=launcher.thisNode;
+    var newNode=launcher.newNode;
+      var admnlauncher=new Node();
+      admnlauncher.thisNode=thisNode;
+      admnlauncher.buttons=[
+	{
+	  template: "includes/templates/butaddnewnode.php",
+	  args:{thisParent: thisNode, newNode: newNode}
+	}
+      ];
+      if (thisNode.partnerNode && thisNode.partnerNode.properties.id) {
+	admnlauncher.buttons.push(
+	{
+	  template: "includes/templates/butaddnodelink.php",
+	  args:{thisParent: thisNode}
+	});
+      }
+    admnlauncher.appendThis(thisElement, "includes/templates/admnbuts.php");
   </script>
 </template>

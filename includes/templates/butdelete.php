@@ -1,20 +1,4 @@
-<template id="butdeletetp">
-  <a title="Remove" href="" style="" class="butdel">
-    <img src="includes/css/images/trash.png"/>
-  </a>
-  <script>
-    //normalize
-    var launcher=thisNode;
-    var thisNode=launcher.myNode;
-    thisElement.onclick=function() {
-      var launcher=new Alert();
-      launcher.myTp=thisElement.parentElement.querySelector("template").content;
-      //normailize
-      launcher.myNode=thisNode;
-      launcher.showalert();
-      return false;
-    }
-  </script>
+<template>
   <template>
     <div class="alert">
       <table class="mytable">
@@ -39,8 +23,9 @@
 	    <script>
 	      //normalize
 	      var launcher=thisNode;
-	      var thisNode=launcher.myNode;
-	      thisElement.onsubmit=function() {
+	      var thisNode=launcher.thisNode;
+	      thisElement.addEventListener("submit", function(ev) {
+		ev.preventDefault();
 		thisNode.loadfromhttp({action:"delete my tree", user_id: webuser.properties.id}, function(){
 		  this.parentNode.removeChild(this);
 		  //for no children add a eventlistener to refreshChildrenView event
@@ -49,8 +34,7 @@
 		  this.dispatchEvent("deleteNode");
 		});
 		launcher.hidealert();
-		return false;
-	      }
+	      });
 	      thisElement.elements.exit.onclick=function(){
 		launcher.hidealert();
 	      }
@@ -60,4 +44,19 @@
       </table>
     </div>
   </template>
+  <button title="Remove" href="" style="" class="butdel">
+    <img src="includes/css/images/trash.png"/>
+  </button>
+  <script>
+    //normalize
+    var launcher=thisNode;
+    var thisNode=launcher.thisNode;
+    thisElement.onclick=function() {
+      var launcher=new Alert();
+      launcher.myTp=getTpContent(thisElement.parentElement.querySelector("template"));
+      //normailize
+      launcher.thisNode=thisNode;
+      launcher.showalert();
+    }
+  </script>
 </template>

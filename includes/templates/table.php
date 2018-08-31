@@ -1,13 +1,10 @@
 <template>
-<div class="btn">
-  <a href=""></a>
+  <button class="btn"></button>
   <script>
-    var tableskey=Object.keys(thisNode.properties)[0];
-    thisElement.textContent=thisNode.properties[tableskey];
+    thisNode.writeProperty(thisElement);
     thisElement.onclick=function(){
-      showtree(thisNode.properties[tableskey]);
+      showtree(thisNode.properties.name);
       return false;
     };
   </script>
-</div>
 </template>

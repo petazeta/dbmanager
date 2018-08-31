@@ -1,4 +1,12 @@
 <template>
+  <template id="listtable">
+    <table class="formtable">
+      <tr>
+	<td>
+	</td>
+      </tr>
+    </table>
+  </template>
   <li style="position:relative;">
     <div class="adminlauncher">
       <table>
@@ -6,10 +14,10 @@
 	  <tr>
 	    <td>
 	      <a style="margin:2px" href="">
-		<img src="includes/css/images/expander.png"/>
+		<img src="includes/css/images/expander.png">
 	      </a>
 	      <script>
-		var liPointer=closesttagname.call(thisElement, "LI");
+		var liPointer=DomMethods.closesttagname(thisElement, "LI");
 		
 		thisElement.onclick=function() {
 		  this.style.display="none";
@@ -30,37 +38,31 @@
 		thisElement.onclick=function() {
 		  this.style.display="none";
 		  this.parentElement.querySelectorAll("a")[0].style.display="inline";
-		  var liPointer=closesttagname.call(thisElement, "LI");
+		  var liPointer=DomMethods.closesttagname(thisElement, "LI");
 		  liPointer.lastElementChild.style.display="none";
 		  return false;
 		}
 	      </script>
 	    </td>
 	    <td style="position:relative;">
-	      <table>
-		<tr></tr>
-		<script>
-		  thisNode.getTp("includes/templates/singlefield.php", function(){
-		    var celltp=thisNode.xmlTp.cloneNode(true);
-		    thisNode.refreshPropertiesView(thisElement,celltp);
-		  });
-		</script>
-	      </table>
-	      <div class="btright">
-	      </div>
+	      <div></div>
 	      <script>
-		if (webuser.isWebAdmin()) {
-		  var admnlauncher=new NodeMale();
-		  admnlauncher.myNode=thisNode;
-		  admnlauncher.buttons=[];
-		  if (thisNode.sort_order && thisNode.parentNode.children.length>1) admnlauncher.buttons.push({template: document.getElementById("butvchpostp")});
-		  if (!(thisNode.parentNode.properties.childunique==1 && thisNode.properties.id) && !(thisNode.parentNode.properties.childtablelocked==1)) admnlauncher.buttons.push({template: document.getElementById("butaddnewnodetp"), args:{sort_order: thisNode.sort_order + 1}});
-		  if (!thisNode.parentNode.properties.childtablelocked==1) admnlauncher.buttons.push({template: document.getElementById("butdeletetp")});
-		  if (thisNode.parentNode.partnerNode) admnlauncher.buttons.push({template: document.getElementById("butdeletelinktp")});
-		  if (!(thisNode.parentNode.properties.childunique==1 && thisNode.properties.id) && thisNode.parentNode.partnerNode) admnlauncher.buttons.push({template: document.getElementById("butaddnodelinktp"), args:{sort_order: thisNode.sort_order + 1}});
-		  if (thisNode.parentNode.partnerNode) admnlauncher.buttons.push({template: document.getElementById("buteditlinktp")});
-		  admnlauncher.refreshView(thisElement, document.getElementById("admnbutstp"));
-		}
+		thisNode.editable=true;
+		thisNode.appendProperties(thisElement,"includes/templates/singlefield.php", function(){
+		  thisElement.appendChild(DomMethods.intoColumns(getTpContent(document.getElementById("listtable")).querySelector("table").cloneNode(true), thisElement));
+		});
+	      </script>
+	      <div></div>
+	      <script>
+		var admnlauncher=new Node();
+		admnlauncher.thisNode=thisNode;
+		admnlauncher.editElement = thisElement;
+		admnlauncher.btposition="btmiddleright";
+		admnlauncher.elementsListPos="vertical";
+		admnlauncher.newNode=thisNode.parentNode.newNode.cloneNode(0, null); // we duplicate it so newNode can be reused
+		admnlauncher.newNode.loadasc(thisNode, 2, "id"); //the parent is not the same
+		admnlauncher.newNode.sort_order=thisNode.sort_order + 1;
+		admnlauncher.appendThis(thisElement, "includes/templates/addadmnbutsextra.php");
 	      </script>
 	    </td>
 	  </tr>

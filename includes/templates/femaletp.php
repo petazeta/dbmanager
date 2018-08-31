@@ -9,13 +9,6 @@
 	this.parentElement.querySelectorAll("a")[1].style.display="inline";
 	thisNode.children=[];
 	thisNode.loadfromhttp({action:"load my children"}, function() {
-	  this.addEventListener("refreshChildrenView", function() {
-	    if (this.children==0 || !this.children[0].properties.id){
-	      this.children=[];
-	      var element=this.addChild(new NodeMale());
-	      element.refreshView(thisElement.parentElement.querySelector("UL"), document.getElementById("nochildrentp"));
-	    }
-	  });
 	  thisNode.refreshChildrenView(thisElement.parentElement.querySelector("UL"), "includes/templates/maletp.php");
 	  if (thisElement.parentElement.lastElementChild.style.display=="none") {
 	    thisElement.parentElement.lastElementChild.style.display="block";
@@ -36,6 +29,17 @@
       }
     </script>
     Relationship: <span data-js='thisElement.innerHTML=thisNode.properties.name;'></span>
+    <script>
+      thisNode.writeProperty(thisElement, "name");
+	    var newNode=new NodeMale();
+	    newNode.parentNode=new NodeFemale();
+	    newNode.parentNode.load(thisNode, 1, 0, "id");
+	    //new node comes with datarelationship attached
+
+	    thisNode.newNode=newNode;
+	    thisNode.appendThis(thisElement, "includes/templates/admnlisteners.php", function() {
+	    });
+    </script>
     <ul>
     </ul>
   </li>

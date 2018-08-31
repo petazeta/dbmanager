@@ -1,4 +1,4 @@
-<template id="butvchpostp">
+<template>
   <table style="margin-top:1px" class="arrows">
     <tbody>
       <tr>
@@ -8,10 +8,16 @@
 	  height: 6px;
 	  padding:0px;
 	">
-	  <?php
-	    $orderchange="-1";
-	    include "changeorder.php";
-	  ?>
+	  <div style="display:block;height:100%;"></div>
+	  <script>
+	    //normalize
+	    var launcher=thisNode;
+	    var thisNode=launcher.thisNode;
+	    var leftLauncher=new Node();
+	    leftLauncher.orderchange=-1;
+	    leftLauncher.thisNode=launcher.thisNode;
+	    leftLauncher.appendThis(thisElement, "includes/templates/changeorder.php");
+	  </script>
 	</td>
       </tr>
       <tr>
@@ -24,10 +30,16 @@
 	  height: 6px;
 	  padding:0px;
 	">
-	  <?php 
-	    $orderchange="+1";
-	    include "changeorder.php";
-	  ?>
+	  <div style="display:block;height:100%;"></div>
+	  <script>
+	    //normalize
+	    var launcher=thisNode;
+	    var thisNode=launcher.thisNode;
+	    var rightLauncher=new Node();
+	    rightLauncher.orderchange=1;
+	    rightLauncher.thisNode=launcher.thisNode;
+	    rightLauncher.appendThis(thisElement, "includes/templates/changeorder.php");
+	  </script>
 	</td>
       </tr>
     </tbody>
