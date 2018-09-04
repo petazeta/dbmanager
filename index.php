@@ -23,6 +23,7 @@
       }
       var webuser=new NodeMale();
       var language=new Node();
+      var languages=null;
       language.properties.id=1;
       webuser.extra={language: language};
       webuser.isWebAdmin=function(){
