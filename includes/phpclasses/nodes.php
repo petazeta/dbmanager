@@ -24,7 +24,21 @@ class Node {
     }
     return $dblink;
   }
-  function load($source, $thisProperties=null){
+  function checkdblink(){
+    global $dblink;
+    //error handler function
+    function customError($errno, $errstr) {
+      //if (!$dblink->connect_errno) echo "<b>Error:</b> [$errno] $errstr";
+    }
+    //set error handler
+    set_error_handler("customError");
+    
+    $dblink=new mysqli(DB_HOST, DB_USERNAME, DB_USERPWD, DB_DATABASENAME);
+    restore_error_handler();
+    if ($dblink->connect_errno) return false;
+    return true;
+  }
+  function load($source, $levelup=null, $leveldown=null, $thisProperties=null, $thisPropertiesUp=null, $thisPropertiesDown=null){
     if (gettype($source)=='string') $source=json_decode($source);
     if (isset($source->properties)) {
       if ($thisProperties) {
@@ -46,11 +60,11 @@ class Node {
     $myClon->load($this, $levelup, $leveldown, $thisProperties, $thisPropertiesUp, $thisPropertiesDown);
     return $myClon;
   }
-  function loadasc($source){
+  function loadasc($source, $level=null, $thisProperties=null){
     if (gettype($source)=='string') $source=json_decode($source);
     return $source;
   }
-  function loaddesc($source){
+  function loaddesc($source, $level=null, $thisProperties=null){
     if (gettype($source)=='string') $source=json_decode($source);
     return $source;
   }
@@ -218,7 +232,8 @@ class NodeFemale extends Node{
       $syskey->type='foreignkey';
       $syskey->cloneFromArray($row);
       // to constant table names
-      $syskey->parenttablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $syskey->parenttablename));
+      if (DB_REMOVE_PREFIX) $syskey->parenttablename = preg_replace('/.*__(.+)$/', '$1', $syskey->parenttablename);
+      $syskey->parenttablename='TABLE_' . strtoupper($syskey->parenttablename);
       $this->syschildtablekeysinfo[]=$syskey;
       $this->syschildtablekeys[]=$syskey->name;
     }
@@ -442,9 +457,11 @@ class NodeFemale extends Node{
     else if ($result->num_rows==1) {
       $row=$result->fetch_array(MYSQLI_ASSOC);
       $this->properties->cloneFromArray($row);
-      $this->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->properties->name);
-      $this->properties->childtablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->properties->childtablename));
-      $this->properties->parenttablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->properties->parenttablename));
+      if (DB_REMOVE_PREFIX) $this->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->properties->name);
+      if (DB_REMOVE_PREFIX) $this->properties->childtablename=preg_replace('/.*__(.+)$/', '$1', $this->properties->childtablename);
+      $this->properties->childtablename='TABLE_' . strtoupper($this->properties->childtablename);
+      if (DB_REMOVE_PREFIX) $this->properties->parenttablename=preg_replace('/.*__(.+)$/', '$1', $this->properties->parenttablename);
+      $this->properties->parenttablename='TABLE_' . strtoupper($this->properties->parenttablename);
       //stablish the sort_order statment
       foreach ($this->syschildtablekeysinfo as $syskey) {
 	if ($syskey->type=='sort_order' &&  $syskey->parenttablename==$this->properties->parenttablename) {
@@ -509,7 +526,7 @@ class NodeMale extends Node{
 
   //It loads data from a json, if update is true only fields and relationship present at original will be updated
   function load($source, $levelup=null, $leveldown=null, $thisProperties=null, $thisPropertiesUp=null, $thisPropertiesDown=null) {
-    parent::load($source, $thisProperties);
+    parent::load($source, null, null, $thisProperties);
     if (isset($source->sort_order)) $this->sort_order=$source->sort_order;
     if ($levelup !== 0 && !($levelup < 0)) { //level null and undefined like infinite
       $this->loadasc($source, $levelup, $thisPropertiesUp);
@@ -531,7 +548,7 @@ class NodeMale extends Node{
       $this->relationships[$i]->loaddesc($source->relationships[$i], $level, $thisProperties);
     }
   }
-  function loadasc($source, $level, $thisProperties) {
+  function loadasc($source, $level=null, $thisProperties=null) {
     $source=parent::loadasc($source);
     if (isset($source->sort_order)) $this->sort_order=$source->sort_order;
     if (!isset($source->parentNode) || !$source->parentNode) return false;
@@ -581,9 +598,11 @@ class NodeMale extends Node{
       $row=$result->fetch_array(MYSQLI_ASSOC);
       $this->relationships[$i] = new NodeFemale();
       $this->relationships[$i]->properties->cloneFromArray($row);
-      $this->relationships[$i]->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->relationships[$i]->properties->name);
-      $this->relationships[$i]->properties->childtablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->relationships[$i]->properties->childtablename));
-      $this->relationships[$i]->properties->parenttablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->relationships[$i]->properties->parenttablename));
+      if (DB_REMOVE_PREFIX) $this->relationships[$i]->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->relationships[$i]->properties->name);
+      if (DB_REMOVE_PREFIX) $this->relationships[$i]->properties->childtablename=preg_replace('/.*__(.+)$/', '$1', $this->relationships[$i]->properties->childtablename);
+      $this->relationships[$i]->properties->childtablename='TABLE_' . strtoupper($this->relationships[$i]->properties->childtablename);
+      if (DB_REMOVE_PREFIX) $this->relationships[$i]->properties->parenttablename=preg_replace('/.*__(.+)$/', '$1', $this->relationships[$i]->properties->parenttablename);
+      $this->relationships[$i]->properties->parenttablename='TABLE_' . strtoupper($this->relationships[$i]->properties->parenttablename);
       $this->relationships[$i]->partnerNode=$this;
       $this->relationships[$i]->db_loadchildtablekeys();
       //stablish the sort_order statment
@@ -629,9 +648,11 @@ class NodeMale extends Node{
 	$row=$result->fetch_array(MYSQLI_ASSOC);
 	$this->parentNode[$i] = new NodeFemale();
 	$this->parentNode[$i]->properties->cloneFromArray($row);
-	$this->parentNode[$i]->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->parentNode[$i]->properties->name);
-	$this->parentNode[$i]->properties->childtablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->parentNode[$i]->properties->childtablename));
-	$this->parentNode[$i]->properties->parenttablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->parentNode[$i]->properties->parenttablename));
+	if (DB_REMOVE_PREFIX) $this->parentNode[$i]->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->parentNode[$i]->properties->name);
+	if (DB_REMOVE_PREFIX) $this->parentNode[$i]->properties->childtablename=preg_replace('/.*__(.+)$/', '$1', $this->parentNode[$i]->properties->childtablename);
+	$this->parentNode[$i]->properties->childtablename='TABLE_' . strtoupper($this->parentNode[$i]->properties->childtablename);
+	if (DB_REMOVE_PREFIX) $this->parentNode[$i]->properties->parenttablename=preg_replace('/.*__(.+)$/', '$1', $this->parentNode[$i]->properties->parenttablename);
+	$this->parentNode[$i]->properties->parenttablename='TABLE_' . strtoupper($this->parentNode[$i]->properties->parenttablename);
 	$this->parentNode[$i]->db_loadchildtablekeys();
 	//stablish the sort_order statment
 	foreach ($this->parentNode[$i]->syschildtablekeysinfo as $syskey) {
@@ -649,9 +670,11 @@ class NodeMale extends Node{
       $row=$result->fetch_array(MYSQLI_ASSOC);
       $this->parentNode = new NodeFemale();
       $this->parentNode->properties->cloneFromArray($row);
-      $this->parentNode->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->parentNode->properties->name);
-      $this->parentNode->properties->childtablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->parentNode->properties->childtablename));
-      $this->parentNode->properties->parenttablename='TABLE_' . strtoupper(preg_replace('/.*__(.+)$/', '$1', $this->parentNode->properties->parenttablename));
+      if (DB_REMOVE_PREFIX) $this->parentNode->properties->name=preg_replace('/.*__(.+)$/', '$1', $this->parentNode->properties->name);
+      if (DB_REMOVE_PREFIX) $this->parentNode->properties->childtablename=preg_replace('/.*__(.+)$/', '$1', $this->parentNode->properties->childtablename);
+      $this->parentNode->properties->childtablename='TABLE_' . strtoupper($this->parentNode->properties->childtablename);
+      if (DB_REMOVE_PREFIX) $this->parentNode->properties->parenttablename=preg_replace('/.*__(.+)$/', '$1', $this->parentNode->properties->parenttablename);
+      $this->parentNode->properties->parenttablename='TABLE_' . strtoupper($this->parentNode->properties->parenttablename);
       $this->parentNode->db_loadchildtablekeys();
       //stablish the sort_order statment
       foreach ($this->parentNode->syschildtablekeysinfo as $syskey) {
@@ -711,6 +734,7 @@ class NodeMale extends Node{
   }
 
   function db_insertmyself($extra=null) {
+    global $dblink;
     $myecho=null;
     $myproperties=get_object_vars($this->properties);
     if (isset($myproperties['id'])) unset($myproperties['id']);
@@ -718,7 +742,7 @@ class NodeMale extends Node{
       if (!isset($this->parentNode->childtablekeys) ||
 	isset($this->parentNode->childtablekeys) && in_array($key, $this->parentNode->childtablekeys) ||
 	isset($this->parentNode->syschildtablekeys) && in_array($key, $this->parentNode->syschildtablekeys) ) {
-	$myproperties[$key]='\'' .  mysql_escape_string($value) . '\'';
+	$myproperties[$key]='\'' .  mysqli_escape_string($dblink, $value) . '\'';
       }
     }
     if ($extra) {
@@ -726,7 +750,7 @@ class NodeMale extends Node{
 	if (!isset($this->parentNode->childtablekeys) ||
 	  isset($this->parentNode->childtablekeys) && in_array($key, $this->parentNode->childtablekeys) ||
 	  isset($this->parentNode->syschildtablekeys) && in_array($key, $this->parentNode->syschildtablekeys) ) {
-	  $myproperties[$key]='\'' .  mysql_escape_string($value) . '\'';
+	  $myproperties[$key]='\'' .  mysqli_escape_string($dblink, $value) . '\'';
 	}
       }
     }
@@ -855,6 +879,7 @@ class NodeMale extends Node{
   }
   
   function db_updatemyproperties($properties){
+    global $dblink;
       //We update the fields
       //First we search for the updatable fields
       $myproperties=get_object_vars($properties);
@@ -863,7 +888,7 @@ class NodeMale extends Node{
 	if (!isset($this->parentNode->childtablekeys) ||
 	  isset($this->parentNode->childtablekeys) && in_array($key, $this->parentNode->childtablekeys) ||
 	  isset($this->parentNode->syschildtablekeys) && in_array($key, $this->parentNode->syschildtablekeys) ) {
-	  array_push($setSentences, $key . '=' . '\'' . mysql_escape_string($value) . '\'');
+	  array_push($setSentences, $key . '=' . '\'' . mysqli_escape_string($dblink, $value) . '\'');
 	}
       }
       $sql = 'UPDATE '

@@ -392,8 +392,9 @@ Node.prototype.writeProperty=function(container, property, attribute, onEmptyVal
   if (!property) {
     property=this.getFirstPropertyKey();
   }
+  //In case there is no property we assume a default value
   if (!this.properties[property] && this.properties[property]!==0) {
-    if (this.parentNode && this.parentNode.childtablekeys) {
+    if (this.parentNode && this.parentNode.childtablekeys && this.parentNode.childtablekeystypes) {
       var pos = this.parentNode.childtablekeys.indexOf(property);
       if (pos!=-1 && this.parentNode.childtablekeystypes[pos].indexOf("int")!=-1) {
 	//Is a integer
@@ -504,7 +505,8 @@ Node.prototype.loadfromhttp=function (requestData, reqlistener) {
   }
 };
 Node.prototype.addEventListener=function (eventsNames, listenerFunction, label) {
-  if (label) var id=this.produceEventId(label);
+  if (typeof label=="string") var id=this.produceEventId(label);
+  else var id=label; //label is object
   if (!this.events) this.events={};
   if (!Array.isArray(eventsNames)) eventsNames=[eventsNames];
   if (id) listenerFunction.id=id;

@@ -3,9 +3,8 @@
   Table Names to constants.
   In case there would be prefix (__***) it is removed from the contastant name
 */
-
-$sql="SHOW TABLES";
-
+//require('config.php');
+//require('phpclasses/nodes.php');
 $tablesRequester=new NodeFemale();
 $tablesRequester->db_loadtables();
 
@@ -13,7 +12,9 @@ $databaseTableNames=[];
 foreach($tablesRequester->children as $myTable) {
   $databaseTableNames[] = $myTable->properties->name;
 }
-$standardTables=preg_replace('/.*__(.+)$/', '$1', $databaseTableNames);
+if (DB_REMOVE_PREFIX) $standardTables=preg_replace('/.*__(.+)$/', '$1', $databaseTableNames);
+else $standardTables=$databaseTableNames;
+
 for ($i=0; $i<count($databaseTableNames); $i++) {
   define('TABLE_' . strtoupper($standardTables[$i]), $databaseTableNames[$i]);
 }
