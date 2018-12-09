@@ -3,8 +3,7 @@
   Table Names to constants.
   In case there would be prefix (__***) it is removed from the contastant name
 */
-//require('config.php');
-//require('phpclasses/nodes.php');
+
 $tablesRequester=new NodeFemale();
 $tablesRequester->db_loadtables();
 
