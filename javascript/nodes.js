@@ -30,8 +30,8 @@ function Node() {
   this.myTp=null;
   //optional variable this.extra
 }
-
-Node.prototype.load=function(source, thisProperties) {
+// nodeType 1 the properties are not in properties var
+Node.prototype.load=function(source, thisProperties, nodeType) {
   if (typeof source=="string") source=JSON.parse(source);
   if (source.properties) {
     if (thisProperties) {
@@ -45,6 +45,9 @@ Node.prototype.load=function(source, thisProperties) {
       this.properties.cloneFromArray(myProperties);
     }
     else this.properties.cloneFromArray(source.properties);
+  }
+  if (nodeType==1) {
+    this.properties=source;
   }
   if (source.extra) this.extra=source.extra;
 }
@@ -64,7 +67,7 @@ Node.prototype.loadasc=function(source) {
 }
 Node.prototype.getTp=function (tpHref, reqlistener) {
   if (supportsTemplate() && Config.loadTemplatesAtOnce!==false) {
-    var tpid="tp" + tpHref.match(/\/(\w+)\..+/, '$1')[1];
+    var tpid="tp" + tpHref.match(/(\w+)\..+/, '$1')[1];
     if (document.getElementById(tpid)) {
       var newElement=document.getElementById(tpid).cloneNode(true);
       newElement.id=null;
@@ -187,7 +190,8 @@ Node.prototype.render = function (tp) {
   var elementsToBeModified=[];
   var myElements=[];
   //myElements.push(tp); //To get the outerHTML in case there is not template DEPRECATED
-  myElements=Array.from(tp.querySelectorAll("SCRIPT")); //inner elements
+  if (tp.tagName=="SCRIPT") myElements.push(tp); //For when there is no descendents
+  else myElements=Array.from(tp.querySelectorAll("SCRIPT")); //inner elements
   //document.thisScript=[];
   //get inside Tps
   if (!supportsTemplate()) {
@@ -428,8 +432,8 @@ Node.prototype.getFirstPropertyKey=function(){
   }
 }
 
-//It loads a node tree from a php script that privides it in json format
-Node.prototype.loadfromhttp=function (requestData, reqlistener) {
+//It loads a node tree from a php script that privides it in json format. nodeType==1 then json is not node
+Node.prototype.loadfromhttp=function (requestData, reqlistener, nodeType) {
   var xmlhttp;
   if (window.XMLHttpRequest) {
     // code for IE7+, Firefox, Chrome, Opera, Safari
@@ -452,7 +456,7 @@ Node.prototype.loadfromhttp=function (requestData, reqlistener) {
       console.log(JSON.parse(parcialRes));
       throw err;
     }
-    thisNode.load(responseobj);
+    thisNode.load(responseobj, null, nodeType);
     if (Config.logRequests==true) {
       var childtablename= responseobj.properties && responseobj.properties.childtablename ? responseobj.properties.childtablename :
       (responseobj.parentNode && responseobj.parentNode.properties && responseobj.parentNode.childtablename) ?
@@ -475,7 +479,7 @@ Node.prototype.loadfromhttp=function (requestData, reqlistener) {
   });
   xmlhttp.onreadystatechange=function() {  
     if (xmlhttp.readyState==4 && xmlhttp.status!==200) {     
-      alert('Oops! Something went wrong with the XMLHttpRequest.');
+      console.log('Oops! Something went wrong with the XMLHttpRequest.');
     }
   }
   xmlhttp.overrideMimeType("application/json");
@@ -504,52 +508,67 @@ Node.prototype.loadfromhttp=function (requestData, reqlistener) {
     xmlhttp.send(request); //sending just formData (archives)
   }
 };
-Node.prototype.addEventListener=function (eventsNames, listenerFunction, label) {
-  if (typeof label=="string") var id=this.produceEventId(label);
-  else var id=label; //label is object
+Node.prototype.addEventListener=function (eventsNames, listenerFunction, id, targetNode) {
   if (!this.events) this.events={};
   if (!Array.isArray(eventsNames)) eventsNames=[eventsNames];
   if (id) listenerFunction.id=id;
+  if (targetNode) listenerFunction.targetNode=targetNode;
   for (var i=0; i<eventsNames.length; i++) {
-    if (id && this.eventExists(eventsNames[i], id)) {
-      continue;
+    if (id) {
+      var position=this.eventExists(eventsNames[i], id, targetNode);
+      //if there is the event name we update it
+      if (position!==false) {
+	this.events[eventsNames[i]][position]=listenerFunction;
+	continue;
+      }
     }
     if (!this.events[eventsNames[i]]) this.events[eventsNames[i]]=[];
     this.events[eventsNames[i]].push(listenerFunction);
   }
 }
-Node.prototype.removeEventListener=function (eventName, label) {
-  var id=this.produceEventId(label);
+Node.prototype.removeEventListener=function (eventName, id, targetNode) {
+  if (!id && !targetNode) return false; //id || targetNode is required
   if (this.events && this.events[eventName]) {
     var i=this.events[eventName].length;
     while(i--) {
-      if (this.events[eventName][i].id==id) {
-	this.events[eventName].splice(i,1);
+      if (id && this.events[eventName][i].id==id || !id) {
+	if (targetNode && this.events[eventName][i].targetNode==targetNode || !targetNode)
+	{
+	  this.events[eventName].splice(i,1);
+	}
       }
     }
   }
 }
-Node.prototype.eventExists=function (eventName, id) {
+//Better for internal use only
+Node.prototype.eventExists=function (eventName, id, targetNode) {
+  if (!id && !targetNode) return false; //id || targetNode is required
   if (this.events && this.events[eventName]) {
     var i=this.events[eventName].length;
     while(i--) {
-      if (this.events[eventName][i].id==id) {
-	return true;
+      if (id && this.events[eventName][i].id==id || !id) {
+	if (targetNode)
+	{
+	  //When loading nodes the object can be different so we check by properties.id combined with the table name
+	  if (targetNode.constructor.name=="NodeFemale") {
+	    if (targetNode.properties.name==this.events[eventName][i].targetNode.properties.name
+	      && targetNode.partnerNode && targetNode.partnerNode.properties.id == this.events[eventName][i].targetNode.partnerNode.properties.id) {
+	      return i;
+	    }
+	  }
+	  else if (targetNode.properties.id && this.events[eventName][i].targetNode.properties.id==targetNode.properties.id) {
+	    if (targetNode.parentNode && targetNode.parentNode.properties.childtablename==this.events[eventName][i].targetNode.parentNode.properties.childtablename) {
+	      return i;
+	    }
+	  }
+	}
+	else {
+	  return i;
+	}
       }
     }
   }
   return false;
-}
-Node.prototype.produceEventId=function (label) {
-  //produce a unique identifier to recognize te event
-  var evId=false;
-  if (this.constructor.name=="NodeFemale") {
-    evId=this.properties.parenttablename + this.properties.childtablename + label;
-  }
-  else {
-    evId=this.properties.id + label;
-  }
-  return evId;
 }
 Node.prototype.dispatchEvent=function (eventName, args) {
   if (this.events && this.events[eventName]) {
@@ -730,6 +749,7 @@ NodeFemale.prototype.avoidrecursionup=function(){
 
 NodeFemale.prototype.getrootnode=function() {
   if (!this.partnerNode) return this;
+  else if (this.partnerNode==this) return this;
   else return this.partnerNode.getrootnode();
 }
 
@@ -942,6 +962,7 @@ NodeMale.prototype.addRelationship=function(rel) {
 
 NodeMale.prototype.getrootnode=function() {
   if (!this.parentNode) return this;
+  else if (this.parentNode==this) return this;
   else return this.parentNode.getrootnode();
 }
 

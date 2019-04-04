@@ -9,13 +9,12 @@
 	  var launcher=thisNode;
 	  var thisNode=launcher.thisNode;
 	  var loadCandidatesNode=thisNode.parentNode.cloneNode(0, 0);
-	  console.log(thisNode, loadCandidatesNode);
 	  
 	  var parameters={user_id: webuser.properties.id};
 	  if (thisNode.parentNode.properties.parentunique!=0) parameters.action="load unlinked";
 	  else parameters.action="load all";
 	  loadCandidatesNode.loadfromhttp(parameters, function() {
-	    loadCandidatesNode.refreshChildrenView(thisElement, "includes/templates/reloption.php");
+	    loadCandidatesNode.refreshChildrenView(thisElement, "templates/reloption.php");
 	  });
 	</script>
 	<table class="mytable" style="margin-top:11px;">
@@ -52,7 +51,7 @@
   </template>
 
   <a title="Edit Node Link" href="" class="buteditlink">
-    <img src="includes/css/images/penrel.png"/>
+    <img src="css/images/penrel.png"/>
   </a>
   <script>
     // Onclick the + image we display the rel options pop up

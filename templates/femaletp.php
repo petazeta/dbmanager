@@ -1,7 +1,7 @@
 <template>
   <li>
     <a style="margin:2px" href="">
-      <img src="includes/css/images/expander.png"/>
+      <img src="css/images/expander.png"/>
     </a>
     <script>
       thisElement.onclick=function() {
@@ -9,7 +9,7 @@
 	this.parentElement.querySelectorAll("a")[1].style.display="inline";
 	thisNode.children=[];
 	thisNode.loadfromhttp({action:"load my children"}, function() {
-	  thisNode.refreshChildrenView(thisElement.parentElement.querySelector("UL"), "includes/templates/maletp.php");
+	  thisNode.refreshChildrenView(thisElement.parentElement.querySelector("UL"), "templates/maletp.php");
 	  if (thisElement.parentElement.lastElementChild.style.display=="none") {
 	    thisElement.parentElement.lastElementChild.style.display="block";
 	  }
@@ -18,7 +18,7 @@
       }
     </script>
     <a style="margin:2px; display: none;" href="">
-      <img src="includes/css/images/reducer.png"/>
+      <img src="css/images/reducer.png"/>
     </a>
     <script>
       thisElement.onclick=function() {
@@ -37,7 +37,7 @@
 	    //new node comes with datarelationship attached
 
 	    thisNode.newNode=newNode;
-	    thisNode.appendThis(thisElement, "includes/templates/admnlisteners.php", function() {
+	    thisNode.appendThis(thisElement, "templates/admnlisteners.php", function() {
 	    });
     </script>
     <ul>

@@ -1,6 +1,6 @@
 <template id="butdeletelinktp">
   <a href="" class="butdellink">
-    <img src="includes/css/images/trashrel.png"/>
+    <img src="css/images/trashrel.png"/>
   </a>
   <script>
     //Normalize

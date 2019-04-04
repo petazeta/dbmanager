@@ -1,5 +1,5 @@
 <template>
-  <div></div>
+  <div data-id="admnbuts"></div>
   <script>
     var launcher=thisNode;
     var thisNode=launcher.thisNode;
@@ -8,6 +8,7 @@
     var btposition=launcher.btposition;
     var elementsListPos=launcher.elementsListPos;
     var excludeButtons=launcher.excludeButtons;
+    var visibility=launcher.visibility; //If not it is visible on mouse over
     
     if (btposition) thisElement.className=btposition;
     else thisElement.className=Config.defaultAdmnsButtonsPosition;
@@ -15,46 +16,41 @@
     function showAdmnButtons(){
       if (!thisElement.parentElement) editElement.parentElement.appendChild(thisElement); //after the log out thisElement is removed from parent
       thisElement.parentElement.style.position="relative";
-      thisElement.className += " visibleHover";
-      editElement.addEventListener("mouseover", function(ev){
-	thisElement.className = thisElement.className.replace(/ visibleHover/g,"");
-      });
-      editElement.addEventListener("mouseout", function(ev){
-	thisElement.className += " visibleHover";
-      });
+      if (!visibility) {
+	thisElement.style.opacity=0;
+	thisElement.addEventListener("mouseover", function(ev){
+	  thisElement.style.opacity=1;
+	});
+	thisElement.addEventListener("mouseout", function(ev){
+	  thisElement.style.opacity=0;
+	});
+	editElement.addEventListener("mouseover", function(ev){
+	  thisElement.style.opacity=1;
+	});
+	editElement.addEventListener("mouseout", function(ev){
+	  thisElement.style.opacity=0;
+	});
+      }
+      else {
+	thisElement.style.visibility=visibility;
+      }
+      var posTp="templates/buthchpos.php";
+      if (elementsListPos=="vertical") posTp="templates/butvchpos.php";
       var admnlauncher=new Node();
       admnlauncher.buttons=[
 	{
-	  template: "includes/templates/butaddnewnode.php",
+	  template: posTp,
+	  args:{thisNode: thisNode}
+	},
+	{
+	  template: "templates/butaddnewnode.php",
 	  args:{thisParent: thisNode.parentNode, newNode: newNode}
 	},
 	{
-	  template: "includes/templates/butdelete.php",
+	  template: "templates/butdelete.php",
 	  args:{thisNode: thisNode}
 	}
       ];
-      if (thisNode.parentNode.properties.sort_order) {
-	var posTp="includes/templates/buthchpos.php";
-	if (elementsListPos=="vertical") posTp="includes/templates/butvchpos.php";
-	admnlauncher.buttons.push({
-	  template: posTp,
-	  args:{thisNode: thisNode}
-	});
-      }
-      if (thisNode.parentNode.partnerNode && thisNode.parentNode.partnerNode.properties.id) {
-	admnlauncher.buttons.push({
-	  template: "includes/templates/butdeletelink.php",
-	  args:{thisNode: thisNode}
-	},
-	{
-	  template: "includes/templates/butaddnodelink.php",
-	  args:{thisNode: thisNode}
-	},
-	{
-	  template: "includes/templates/buteditlink.php",
-	  args:{thisNode: thisNode}
-	});
-      }
       var buttons=admnlauncher.buttons.slice(0);
       if (excludeButtons) {
 	for (var i=0; i<excludeButtons.length; i++) {
@@ -65,7 +61,9 @@
 	  }
 	}
       }
-      admnlauncher.refreshView(thisElement, "includes/templates/admnbuts.php");
+      admnlauncher.refreshView(thisElement, "templates/admnbuts.php", function(){
+	this.dispatchEvent("addAdmnButs");
+      });
     }
     
     if (webuser.isWebAdmin()) {
@@ -76,8 +74,7 @@
     while (pointer && pointer != document.getElementById("centralcontent")) {
       pointer=DomMethods.closesttagname(pointer, "div");
     }
-    if (pointer != document.getElementById("centralcontent") &&
-    !webuser.eventExists("log",thisNode.parentNode.properties.childtablename + thisNode.properties.id + "admnButton")) {
+    if (pointer != document.getElementById("centralcontent")) {
       //it is outside of the central content so we got to add a log event listener
       webuser.addEventListener("log",
 	function() {
@@ -89,11 +86,11 @@
 	    showAdmnButtons();
 	  }
 	},
-	thisNode.parentNode.properties.childtablename + thisNode.properties.id + "admnButton"
+	"admnButton", thisNode
       );
       thisNode.addEventListener("deleteNode", function() {
-	webuser.removeEventListener("log", thisNode.parentNode.properties.childtablename + thisNode.properties.id + "admnButton");
-      });
+	webuser.removeEventListener("log", "admnButton", thisNode);
+      }, "deleteAdmnButton");
     }
   </script>
 </template>

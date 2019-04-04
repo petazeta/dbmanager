@@ -12,7 +12,7 @@
 	if (thisNode.children.length==0) {
 	  thisNode.refreshChildrenView();
 	}
-      }, thisNode);
+      }, "nochildrenrefresh", thisNode);
     }
     //adding the only-addbutton when is no records
     thisNode.addEventListener("refreshChildrenView", function() {
@@ -23,7 +23,7 @@
 	  var admnlauncher=new Node();
 	  admnlauncher.thisNode=thisNode; //parent
 	  admnlauncher.newNode=newNode;
-	  admnlauncher.refreshView(this.childContainer, "includes/templates/nochildren.php");
+	  admnlauncher.refreshView(this.childContainer, "templates/nochildren.php");
 	}
 	//remove the add buton when log after webadmin
 	else {
@@ -48,6 +48,7 @@
 	  var button=null;
 	  var position=1;
 	  if (nodeDeleted.sort_order && nodeDeleted.sort_order > 1) position=nodeDeleted.sort_order-1;
+	  console.log("position", position);
 	  this.children[position-1].getMyDomNodes().every(function(domNode){
 	    button=domNode.querySelector("[data-button]");
 	    if (button) return false;

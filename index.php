@@ -1,11 +1,15 @@
+<?php
+require('includes/config.php');
+$tablePrefix=DB_PREFIX;
+?>
 <!DOCTYPE html>
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
-    <script type="text/javascript" src="includes/javascript/config.js"></script>
-    <script type="text/javascript" src="includes/javascript/iesp.js"></script>
-    <script type="text/javascript" src="includes/javascript/nodes.js"></script>
-    <script type="text/javascript" src="includes/javascript/dommethods.js"></script>
-    <link rel="stylesheet" type="text/css" href="includes/css/main.css">
+    <script type="text/javascript" src="javascript/config.js"></script>
+    <script type="text/javascript" src="javascript/iesp.js"></script>
+    <script type="text/javascript" src="javascript/nodes.js"></script>
+    <script type="text/javascript" src="javascript/dommethods.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/main.css">
   </head>
   <body>
     <div>
@@ -17,7 +21,7 @@
       function loadTemplates(callback) {
 	//We load all the templates at once
 	var tpLoader=new Node();
-	tpLoader.appendThis(document.body, "includes/templates.php", function(){
+	tpLoader.appendThis(document.body, "templates.php", function(){
 	  if (callback) callback();
 	});
       }
@@ -33,8 +37,12 @@
       var myalert=new Alert();
       var tablesmother=new NodeFemale();
 
-      tablesmother.loadfromhttp({action: "load tables"}, function(){
-	tablesmother.refreshChildrenView(document.getElementById("tablescontainer"), "includes/templates/table.php");
+      tablesmother.loadfromhttp({action: "load tables"
+<?php
+if ($tablePrefix) echo ', prefix:"' . $tablePrefix . '"';
+?>
+      }, function(){
+	tablesmother.refreshChildrenView(document.getElementById("tablescontainer"), "templates/table.php");
       });
       //just created the relationship we start again the function
 
@@ -53,8 +61,8 @@
 	    //new node comes with datarelationship attached
 
 	    myrootmother.newNode=newNode;
-	    myrootmother.appendThis(document.getElementById("treecontainer"), "includes/templates/admnlisteners.php", function() {
-	      myrootmother.refreshChildrenView(document.getElementById("treecontainer"), "includes/templates/maletp.php");
+	    myrootmother.appendThis(document.getElementById("treecontainer"), "templates/admnlisteners.php", function() {
+	      myrootmother.refreshChildrenView(document.getElementById("treecontainer"), "templates/maletp.php");
 	    });
 	  });
 	});

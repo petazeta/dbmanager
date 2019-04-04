@@ -24,45 +24,6 @@ table{border-collapse:collapse;}
     right: 0;
     transform: translateX(100%) translateY(-50%);
 }
-.adminlauncher {
-  position: relative;
-  display: inline-block;
-}
-.adminsinglelauncher {
-  position: relative;
-  display: inline-block;
-}
-.adminedit, .singleadminedit{
-	background-color: rgba(0, 0, 0, 0);
-	opacity:0;
-}
-.adminlauncher:hover
-.adminedit {
-    opacity: 1;
-    transition: opacity 0.2s ease 0.2s;
-}
-.adminlauncherfix {
-  position: relative;
-  display: inline-block;
-}
-.adminlauncherfix
-.adminedit {
-    opacity: 1;
-    transition: opacity 0.2s ease 0.2s;
-}
-.butvisible
-.adminedit {
-    opacity: 1;
-    transition: opacity 0.2s ease 0.2s;
-}
-.adminedit td{
-	vertical-align:top;
-}
-.adminsinglelauncher:hover
-.singleadminedit {
-    opacity: 1;
-    transition: opacity 0.2s ease 0.2s;
-}
 .btrightedit {
     position: absolute;
     top: calc(50% - 16px);

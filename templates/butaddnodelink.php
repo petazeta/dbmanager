@@ -1,6 +1,6 @@
 <template id="butaddnodelinktp">
   <a title="Add Node Link" href="" class="butaddlink">
-    <img src="includes/css/images/plusrel.png"/>
+    <img src="css/images/plusrel.png"/>
   </a>
   <script>
     // Onclick the + image we display the rel options pop up
@@ -23,7 +23,7 @@
 	  var launcher=thisNode.thisNode;
 	  var loadCandidatesNode=launcher.thisParent.cloneNode(1, 0); //partner is necesary
 	  loadCandidatesNode.loadfromhttp({user_id: webuser.properties.id, action: "load unlinked"}, function() {
-	    this.refreshChildrenView(thisElement, "includes/templates/reloption.php");
+	    this.refreshChildrenView(thisElement, "templates/reloption.php");
 	  });
 	</script>
 	<table class="mytable" style="margin-top:11px;">

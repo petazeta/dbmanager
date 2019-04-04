@@ -45,7 +45,7 @@
     </div>
   </template>
   <button title="Remove" href="" style="" class="butdel">
-    <img src="includes/css/images/trash.png"/>
+    <img src="css/images/trash.png"/>
   </button>
   <script>
     //normalize

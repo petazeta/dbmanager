@@ -1,8 +1,7 @@
 <template>
 <?php
-//Load all files from folder includes/templates
+//Load all files from folder templates
 //add to the template the id=filename
-$dir    = 'includes/templates';
 $dir='templates';
 $tpfiles = array_diff(scandir($dir), array('..', '.'));
 foreach ($tpfiles as $key => $value) {
