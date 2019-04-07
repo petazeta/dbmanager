@@ -10,6 +10,7 @@ $tablePrefix=DB_PREFIX;
     <script type="text/javascript" src="javascript/nodes.js"></script>
     <script type="text/javascript" src="javascript/dommethods.js"></script>
     <link rel="stylesheet" type="text/css" href="css/main.css">
+    <link rel="icon" href="favicon.ico">
   </head>
   <body>
     <div>
