@@ -1,12 +1,22 @@
 ***************
+*DBMANAGER Version:
+***************
+1.1.0 04/05/2019
+
+***************
+*Support this Project:
+***************
+https://www.patreon.com/bePatron?u=18217513
+
+***************
 *Autor Note*
 ***************
-This program has been developed by: Alberto Melchor Herrera, melchorherrera@gmail.com. I am greateful to those people that have developed software in which I got inspiration. This version of the software is free to use and modify.
+This program has been developed by: Alberto Melchor Herrera, melchorherrera@gmail.com. I am greateful to the people that have developed software in which I got inspiration. This version of the software is free to use and modify. I am available at the email for any support and other issues.
 
 ***************
 *About*
 ***************
-This software implements a database content manager system that works for databases that uses the ORM framework system (https://sourceforge.net/p/hierarnodesys/). It is written in PHP (As well as HTML, CSS and JavaScript). It uses Mysql for a database.
+This software implements a database content manager system that works for databases that uses the ORM framework system (https://sourceforge.net/p/hierarnodesys/). It is written in PHP (As well as HTML, CSS and JavaScript). It uses MariaDB/Mysql (InnoDB) for a database.
 
 **************
 *Installation*
@@ -18,7 +28,7 @@ This software implements a database content manager system that works for databa
 *****************
 *Getting started*
 *****************
-Open the browser (chrome or firefox) at the main folder url you will find a list of the database tables. Click on them to edit their records.
+Open the browser (chrome or firefox) at the main folder url you will find a list of the database tables. Click on any of them to edit its records.
 
 *****************
 *More*
