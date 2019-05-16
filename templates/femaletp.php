@@ -1,20 +1,24 @@
 <template>
   <li>
-    <a style="margin:2px" href="">
+    <a style="margin:2px" href="javascript:">
       <img src="css/images/expander.png"/>
     </a>
     <script>
+      //mod for the navigation facility
+      var url='?menu=' + thisNode.properties.id;
+      thisElement.href=url;
+      //this mod is not finished
       thisElement.onclick=function() {
-	this.style.display="none";
-	this.parentElement.querySelectorAll("a")[1].style.display="inline";
-	thisNode.children=[];
-	thisNode.loadfromhttp({action:"load my children"}, function() {
-	  thisNode.refreshChildrenView(thisElement.parentElement.querySelector("UL"), "templates/maletp.php");
-	  if (thisElement.parentElement.lastElementChild.style.display=="none") {
-	    thisElement.parentElement.lastElementChild.style.display="block";
-	  }
-	});
-	return false;
+        this.style.display="none";
+        this.parentElement.querySelectorAll("a")[1].style.display="inline";
+        thisNode.children=[];
+        thisNode.loadfromhttp({action:"load my children"}, function() {
+          thisNode.refreshChildrenView(thisElement.parentElement.querySelector("UL"), "templates/maletp.php");
+          if (thisElement.parentElement.lastElementChild.style.display=="none") {
+            thisElement.parentElement.lastElementChild.style.display="block";
+          }
+        });
+        return false;
       }
     </script>
     <a style="margin:2px; display: none;" href="">
