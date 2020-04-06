@@ -30,6 +30,7 @@ function Node() {
   this.myTp=null;
   //optional variable this.extra
 }
+Node.prototype.config={onAppend: null};
 // nodeType 1 the properties are not in properties var
 Node.prototype.load=function(source, thisProperties, nodeType) {
   if (typeof source=="string") source=JSON.parse(source);
@@ -130,7 +131,7 @@ Node.prototype.getTp=function (tpHref, reqlistener) {
 Node.prototype.avoidrecursion=function(){
   if (this.extra) this.extra=null;
 }
-Node.prototype.toRequestFormData=function(parameters) {
+Node.prototype.toRequestData=function(parameters) {
   switch (parameters.action) {
     case "load unlinked":
     case "load my partner":
@@ -171,11 +172,29 @@ Node.prototype.toRequestFormData=function(parameters) {
     default:
       var node=this.cloneNode();
   }
-  var FD = new FormData();
-  // Push our data into our FormData object
+  // Push our data into json
   node.avoidrecursion();
-  FD.append("json", JSON.stringify(node));
-  FD.append("parameters", JSON.stringify(parameters));
+  return node;
+}
+
+Node.prototype.toRequestFormData=function(parameters) {
+  var FD = new FormData();
+  if (Array.isArray(parameters.nodes)) {
+    var parametersarray=parameters.parameters;
+    var nodes=parameters.nodes;
+    var data=[];
+    var myparameters=parametersarray;
+    for (var i=0; i<nodes.length; i++) {
+      data.push(nodes[i].toRequestData(parametersarray[i]));
+    }
+  }
+  else {
+    var data=this.toRequestData(parameters);
+    var myparameters=parameters;
+  }
+  // Push our data into our FormData object
+  FD.append("json", JSON.stringify(data));
+  FD.append("parameters", JSON.stringify(myparameters));
   return FD;
 }
 
@@ -258,6 +277,9 @@ Node.prototype.appendThis=function (container, tp, reqlistener) {
       this.myContainer=container;
     }
     this.myContainer.appendChild(clone);
+    if (typeof this.config.onAppend == 'function') {
+      this.config.onAppend.call(this);
+    }
     if (reqlistener) {
       reqlistener.call(this);
     }
@@ -279,7 +301,6 @@ Node.prototype.appendThis=function (container, tp, reqlistener) {
     refresh.call(this);
   }
 };
-
 Node.prototype.refreshPropertiesView=function (container, tp, myReqlistener) {
   if (container) this.propertiesContainer=container;
   this.propertiesContainer.innerHTML='';
@@ -398,9 +419,9 @@ Node.prototype.writeProperty=function(container, property, attribute, onEmptyVal
   }
   //In case there is no property we assume a default value
   if (!this.properties[property] && this.properties[property]!==0) {
-    if (this.parentNode && this.parentNode.childtablekeys && this.parentNode.childtablekeystypes) {
+    if (this.parentNode && this.parentNode.childtablekeys && this.parentNode.childtablekeysinfo) {
       var pos = this.parentNode.childtablekeys.indexOf(property);
-      if (pos!=-1 && this.parentNode.childtablekeystypes[pos].indexOf("int")!=-1) {
+      if (pos!=-1 && this.parentNode.childtablekeysinfo[pos]['Type'].indexOf("int")!=-1) {
 	//Is a integer
 	container[myAttribute]="0";
       }
@@ -639,7 +660,7 @@ function NodeFemale() {
   this.partnerNode=null;
   this.children=[];
   this.childtablekeys=[];
-  this.childtablekeystypes=[];
+  this.childtablekeysinfo=[];
   this.syschildtablekeys=[];
   this.syschildtablekeysinfo=[];
   this.childTp=null;
@@ -655,9 +676,10 @@ NodeFemale.prototype.load=function(source, levelup, leveldown, thisProperties, t
       this.childtablekeys[i]=source.childtablekeys[i];
     }
   }
-  if (source.childtablekeystypes) {
-    for (var i=0;i<source.childtablekeystypes.length;i++) {
-      this.childtablekeystypes[i]=source.childtablekeystypes[i];
+  if (source.childtablekeysinfo) {
+    for (var i=0;i<source.childtablekeysinfo.length;i++) {
+      this.childtablekeysinfo[i]=new Properties();
+      this.childtablekeysinfo[i].cloneFromArray(source.childtablekeysinfo[i]);
     }
   }
   if (source.syschildtablekeys) {
@@ -667,7 +689,8 @@ NodeFemale.prototype.load=function(source, levelup, leveldown, thisProperties, t
   }
   if (source.syschildtablekeysinfo) {
     for (var i=0;i<source.syschildtablekeysinfo.length;i++) {
-      this.syschildtablekeysinfo[i]=source.syschildtablekeysinfo[i];
+      this.syschildtablekeysinfo[i]=new Properties();
+      this.syschildtablekeysinfo[i].cloneFromArray(source.syschildtablekeysinfo[i]);
     }
   }
   if (levelup !== 0 && !(levelup < 0)) { //level null and undefined like infinite
@@ -886,7 +909,7 @@ NodeMale.prototype.avoidrecursion=function() {
   Node.prototype.avoidrecursion.call(this);
   if (this.parentNode) {
     if (Array.isArray(this.parentNode)) {
-      this.partnerNode.forEach(function(pNode){
+      this.parentNode.forEach(function(pNode){
 	pNode.avoidrecursionup();
       });
     }
@@ -901,7 +924,7 @@ NodeMale.prototype.avoidrecursionup=function(){
   this.relationships=[];
   if (this.parentNode) {
     if (Array.isArray(this.parentNode)) {
-      this.partnerNode.forEach(function(pNode){
+      this.parentNode.forEach(function(pNode){
 	pNode.avoidrecursionup();
       });
     }

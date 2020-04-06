@@ -1,12 +1,4 @@
 <template>
-  <template id="listtable">
-    <table class="formtable">
-      <tr>
-	<td>
-	</td>
-      </tr>
-    </table>
-  </template>
   <li style="position:relative;">
     <div class="adminlauncher" data-hbutton="true" data-button="true">
       <table>
@@ -45,11 +37,10 @@
 	      </script>
 	    </td>
 	    <td style="position:relative;">
-	      <div></div>
+	      <div style="display:flex;"></div>
 	      <script>
 		thisNode.editable=true;
 		thisNode.appendProperties(thisElement,"templates/singlefield.php", function(){
-		  thisElement.appendChild(DomMethods.intoColumns(getTpContent(document.getElementById("listtable")).querySelector("table").cloneNode(true), thisElement));
 		});
 
 		var admnlauncher=new Node();

@@ -1,10 +1,8 @@
-[Support this project!](https://www.patreon.com/bePatron?u=18217513)
-
 # FRESHHH Database Manager
 
 ## Version
 
-1.1.0 04/05/2019
+1.1.0
 
 ## Autor Note
 

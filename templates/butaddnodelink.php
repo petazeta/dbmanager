@@ -8,8 +8,7 @@
     thisElement.onclick=function() {
       var launcher=new Alert();
       launcher.thisNode=thisNode;
-      launcher.myTp=thisElement.parentElement.querySelector("template").content.cloneNode(true);
-      launcher.showalert();
+      launcher.showalert(null,thisElement.parentElement.querySelector("template").content.cloneNode(true));
       return false;
     }
   </script>

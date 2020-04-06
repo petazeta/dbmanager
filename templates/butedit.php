@@ -103,8 +103,7 @@
 	  editElement[thisAttribute]="";
 	}
 	editElement.setAttribute("contenteditable","true");
-	editElement.className=editElement.className.replace(/ contenteditableactive/g,"");
-	editElement.className+=" contenteditableactive";
+	editElement.classList.remove("contenteditableactive");
 	// Hide admin buttons when write
 	setVisibilityButtons("hidden");
 	editElement.focus();

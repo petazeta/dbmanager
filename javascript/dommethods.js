@@ -10,11 +10,11 @@ DomMethods={
   closesttagname: function(element, tagname, limitElement){ //tagname capitals
     //if !myreturn.parentElement.tagName => document fragment
     var myreturn=element;
-    while(myreturn && myreturn.parentElement && myreturn.parentElement.tagName && myreturn.parentElement.tagName!=tagname) {
+    while(myreturn && myreturn.parentElement && myreturn.parentElement.tagName && ( myreturn.parentElement.tagName.toLowerCase() != tagname.toLowerCase() )) {
       myreturn=myreturn.parentElement;
     }
     if (limitElement && myreturn.parentElement==limitElement) return false;
-    else if (myreturn.parentElement && myreturn.parentElement.tagName==tagname) return myreturn.parentElement;
+    else if (myreturn.parentElement && (myreturn.parentElement.tagName.toLowerCase()==tagname.toLowerCase())) return myreturn.parentElement;
     else return false;
   },
   intoColumns: function(tableElement, elements, cellsNumber) {
@@ -70,37 +70,74 @@ DomMethods={
     }
     return false;
   },
-  setActive: function(thisNode) {
-    thisNode.parentNode.activeChildren=thisNode;
-    var myPointer=thisNode.getrootnode();
-    myPointer.activeNode=thisNode;
-    var i= thisNode.parentNode.children.length;
-    while(i--) {
-      thisNode.parentNode.children[i].selected=false;
-      var doms=thisNode.parentNode.children[i].getMyDomNodes();
-      var hbutton=null;
-      if (doms) {
-	for (var j=0; j<doms.length; j++) {
-	  if (doms[j].getAttribute("data-hbutton")) hbutton=doms[j];
-	  else hbutton=doms[j].querySelector("[data-hbutton]");
-	  if (hbutton) {
-	    DomMethods.setUnselected(hbutton);
-	    break;
-	  }
-	}
+  unsetActiveChild: function(thisNode) {
+    thisNode.selected=false;
+    var doms=thisNode.getMyDomNodes();
+    var hbutton=null;
+    if (doms) {
+      for (var j=0; j<doms.length; j++) {
+        if (doms[j].getAttribute("data-hbutton")) hbutton=doms[j];
+        else hbutton=doms[j].querySelector("[data-hbutton]");
+        if (hbutton) {
+          DomMethods.setUnselected(hbutton);
+          break;
+        }
       }
     }
+  },
+  unsetActive: function(thisNode) {
+    thisNode.activeChildren=null;
+    //unselect brothers
+    var i= thisNode.children.length;
+    while(i--) {
+      if (thisNode.children[i].selected) {
+        DomMethods.unsetActiveChild(thisNode.children[i]);
+        var myRel=thisNode.children[i].getRelationship(thisNode.properties.name);
+        DomMethods.unsetActive(myRel);
+      }
+    }
+  },
+  setActiveChild: function(thisNode) {
+    if (thisNode.parentNode) {
+      DomMethods.unsetActive(thisNode.parentNode);
+      thisNode.parentNode.activeChildren=thisNode;
+    }
+    //selection of the node
     thisNode.selected=true;
     var doms=thisNode.getMyDomNodes();
     var hbutton=null;
     if (doms) {
       for (var i=0; i<doms.length; i++) {
-	if (doms[i].getAttribute("data-hbutton")) hbutton=doms[i];
-	else hbutton=doms[i].querySelector("[data-hbutton]");
-	if (hbutton) {
-	  DomMethods.setSelected(hbutton);
-	  break;
-	}
+        if (doms[i].getAttribute("data-hbutton")) hbutton=doms[i];
+        else hbutton=doms[i].querySelector("[data-hbutton]");
+        if (hbutton) {
+          DomMethods.setSelected(hbutton);
+          break;
+        }
+      }
+    }
+  },
+  setActive: function(thisNode) {
+    DomMethods.setActiveChild(thisNode);
+    var myRoot=thisNode.getrootnode();
+    var myPointer=thisNode;
+    while (myPointer && myPointer!=myRoot) {
+      myParent=myPointer.parentNode;
+      if (myParent) myPointer=myParent.partnerNode;
+      if (myPointer && !myPointer.selected) {
+        //uselect selecteds children
+        //find the selected
+        var mySelected=false;
+        var i= myParent.children.length;
+        while(i--) {
+          if (myParent.children[i].selected==true) {
+            mySelected=myParent.children[i];
+          }
+        }
+        if (mySelected) {
+          DomMethods.unsetActive(mySelected.getRelationship(myParent.properties.name));
+        }
+        DomMethods.setActiveChild(myPointer);
       }
     }
   }
@@ -112,13 +149,13 @@ function Alert() {
 Alert.prototype=Object.create(NodeMale.prototype);
 Alert.prototype.constructor=Alert;
 
-
-Alert.prototype.showalert=function(text, listener) {
+Alert.prototype.showalert=function(text, tp, listener) {
+  if (tp == null) tp="templates/alert.php";
   if (text) this.properties.alertmsg=text;
   var alertcontainer=document.createElement("div");
   document.body.appendChild(alertcontainer);
   this.myContainer=alertcontainer;
-  this.refreshView(null, null, listener);
+  this.refreshView(null, tp, listener);
 };
 Alert.prototype.hidealert=function() {
   var remove=function(element){

@@ -3,6 +3,10 @@ function supportsTemplate() {
 }
 
 function getTpContent(tp) {
+  if (!tp) {
+    console.log("error template doesnt exist");
+    return false;
+  }
   if (supportsTemplate()) {
     return tp.content;
   }

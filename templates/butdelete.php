@@ -1,6 +1,6 @@
 <template>
   <template>
-    <div class="alert">
+    <div class="alert alertmsg">
       <table class="mytable">
 	<tr>
 	  <td>
@@ -53,10 +53,9 @@
     var thisNode=launcher.thisNode;
     thisElement.onclick=function() {
       var launcher=new Alert();
-      launcher.myTp=getTpContent(thisElement.parentElement.querySelector("template"));
-      //normailize
+      //normailize ples
       launcher.thisNode=thisNode;
-      launcher.showalert();
+      launcher.showalert(null, thisElement.parentElement.querySelector("template"));
     }
   </script>
 </template>

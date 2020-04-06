@@ -1,7 +1,7 @@
 ***************
 *DBMANAGER Version:
 ***************
-1.1.0 04/05/2019
+1.1.0 28/12/2019
 
 ***************
 *Support this Project:
@@ -34,3 +34,4 @@ Open the browser (chrome or firefox) at the main folder url you will find a list
 *More*
 *****************
 Find us at https://github.com/petazeta/dbmanager/ and https://sourceforge.net/p/freshhh-dbmanager/ for more information.
+It use same core files that yos, just safety changes.

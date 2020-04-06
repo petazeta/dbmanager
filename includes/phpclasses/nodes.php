@@ -105,7 +105,7 @@ class NodeFemale extends Node{
   public $partnerNode;
   public $children=[];
   public $childtablekeys=[];
-  public $childtablekeystypes=[];
+  public $childtablekeysinfo=[];
   public $syschildtablekeys=[];
   public $syschildtablekeysinfo=[];
 
@@ -116,9 +116,9 @@ class NodeFemale extends Node{
         $this->childtablekeys[$key]=$value;
       }
     }
-    if (isset($source->childtablekeystypes)) {
-      foreach ($source->childtablekeystypes as $key => $value) {
-        $this->childtablekeystypes[$key]=$value;
+    if (isset($source->childtablekeysinfo)) {
+      foreach ($source->childtablekeysinfo as $key => $value) {
+        $this->childtablekeysinfo[$key]=$value;
       }
     }
     if (isset($source->syschildtablekeys)) {
@@ -206,7 +206,7 @@ class NodeFemale extends Node{
   }
   function db_loadchildtablekeys() {
     $this->childtablekeys=[];
-    $this->childtablekeystypes=[];
+    $this->childtablekeysinfo=[];
     $this->syschildtablekeys=[];
     $this->syschildtablekeysinfo=[];
     //lets load systablekeys (referenced columns)
@@ -250,7 +250,9 @@ class NodeFemale extends Node{
       }
       if (in_array($row['Field'], $this->syschildtablekeys)) continue;
       $this->childtablekeys[]=$row['Field'];
-      $this->childtablekeystypes[]=$row['Type'];
+      $infokeys=new Properties();
+      $infokeys->cloneFromArray($row);
+      $this->childtablekeysinfo[]=$infokeys;
     }
     return true;
   }
@@ -743,12 +745,29 @@ class NodeMale extends Node{
     return true;
   }
 
-  function db_insertmyself($extra=null) {
+  function db_insertmyself($extra=null) { 
     global $dblink;
     $myproperties=get_object_vars($this->properties);
-    if (isset($myproperties['id'])) unset($myproperties['id']);
     
     if ($extra) $myproperties = array_merge($myproperties, $extra);
+
+    //Now we add a value for the properties that are null and cannot be null
+    if (isset($this->parentNode->childtablekeysinfo) && isset($this->parentNode->syschildtablekeys)) {
+      foreach ($this->parentNode->childtablekeys as $key => $value) {
+        if  ($this->parentNode->childtablekeysinfo[$key]->Null=='NO' && ($this->parentNode->childtablekeysinfo[$key]->Default===null || $this->parentNode->childtablekeysinfo[$key]->Extra!='auto_increment')){
+          if (!in_array($value, array_keys($myproperties)) || $myproperties[$value]===null) {
+            if (strpos($this->parentNode->childtablekeysinfo[$key]->Type, 'int')!==false || strpos($this->parentNode->childtablekeysinfo[$key]->Type, 'decimal')!==false) {
+              $myproperties[$value]=0;
+            }
+            else {
+              $myproperties[$value]='';
+            }
+          }
+        }
+      }
+    }
+    
+    if (isset($myproperties['id'])) unset($myproperties['id']);
 
       $param_keys = [];
       $param_types = "";
@@ -1053,7 +1072,7 @@ class NodeMale extends Node{
     foreach ($proparray as $key => $value) {
       if (isset($this->parentNode->childtablekeys) ) {
 	if (!in_array($key, $this->parentNode->childtablekeys) ) {
-	  if (isset($this->parentNode->syschildtablekeys) ) {
+	  if (isset($this->parentNode->syschildtablekeys) ) { //I dont understand well, maybe we dont need to insert any record at syskeys
 	    if (!in_array($key, $this->parentNode->syschildtablekeys) ) {
 	      continue;
 	    }
@@ -1065,13 +1084,13 @@ class NodeMale extends Node{
       }
       array_push($param_values, $value);
       array_push($param_keys, $key);
-      if (isset($this->parentNode->childtablekeystypes) || isset($this->parentNode->syschildtablekeys) ) {
+      if (isset($this->parentNode->childtablekeysinfo) || isset($this->parentNode->syschildtablekeys) ) {
 	$keypos=array_search($key, $this->parentNode->childtablekeys);
 	if ($keypos!==false) {
-	  if (strpos('int',$this->parentNode->childtablekeystypes[$keypos])!==false) {
+	  if (strpos('int',$this->parentNode->childtablekeysinfo[$keypos]->Type)!==false) {
 	    $param_types .= "i";
 	  }
-	  else if (strpos('decimal',$this->parentNode->childtablekeystypes[$keypos])!==false) {
+	  else if (strpos('decimal',$this->parentNode->childtablekeysinfo[$keypos]->Type)!==false) {
 	    $param_types .= "d";
 	  }
 	  else {

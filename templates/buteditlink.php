@@ -61,9 +61,8 @@
     thisElement.addEventListener("click", function(ev) {
       ev.preventDefault();
       var launcher=new Alert();
-      launcher.myTp=thisElement.parentElement.querySelector("template").content.cloneNode(true);
       launcher.thisNode=thisNode;
-      launcher.showalert();
+      launcher.showalert(null, thisElement.parentElement.querySelector("template").content.cloneNode(true));
     });
   </script>
 

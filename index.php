@@ -1,6 +1,7 @@
 <?php
 require('includes/config.php');
-$tablePrefix=DB_PREFIX;
+require('includes/phpclasses/nodes.php');
+require('includes/database_tables.php');
 ?>
 <!DOCTYPE html>
   <head>
@@ -13,10 +14,9 @@ $tablePrefix=DB_PREFIX;
     <link rel="icon" href="favicon.ico">
   </head>
   <body>
-    <div>
-      <div id="tablescontainer">
-      </div>
-    </div>
+    <div id="langscontainer"></div>
+    <hr>
+    <div id="tablescontainer"></div>
     <ul id="treecontainer" class=""></ul>
     <script>
       //history facility
@@ -32,11 +32,12 @@ $tablePrefix=DB_PREFIX;
           if (callback) callback();
         });
       }
+      var languagesmother=new NodeFemale();
+      languagesmother.properties.childtablename="TABLE_LANGUAGES";
+      languagesmother.properties.parenttablename="TABLE_LANGUAGES";
       var webuser=new NodeMale();
-      var language=new Node();
       var languages=null;
-      language.properties.id=1;
-      webuser.extra={language: language};
+
       webuser.isWebAdmin=function(){
         return true;
       }
@@ -46,6 +47,33 @@ $tablePrefix=DB_PREFIX;
 
       tablesmother.loadfromhttp({action: "load tables"<?php if ($tablePrefix) echo ', prefix:"' . $tablePrefix . '"'; ?>}, function(){
         tablesmother.refreshChildrenView(document.getElementById("tablescontainer"), "templates/table.php");
+
+          var languageSensitive=false;
+          for (var i=0; i<tablesmother.children.length; i++) {
+            if (tablesmother.children[i].properties.name=="<?php if (defined(TABLE_LANGUAGES)) { echo TABLE_LANGUAGES;  }?>") {
+              languageSensitive=true;
+              break;
+            }
+          }
+          if (languageSensitive) {
+            languagesmother.loadfromhttp({action:"load root"}, function(){
+              var langsroot=this.children[0];
+              langsroot.loadfromhttp({action:"load my relationships"}, function(){
+                var langrelkey=0;
+                for (var i=0; i<langsroot.relationships.length; i++) {
+                  if (this.relationships[i].properties.childtablename=="TABLE_LANGUAGES") {
+                      langrelkey=i;
+                      break;
+                  }
+                }
+                languages=langsroot.relationships[langrelkey];
+                languages.loadfromhttp({action:"load my children"}, function(){
+                  this.refreshChildrenView(document.getElementById("langscontainer"), "templates/language.php");
+                  webuser.extra={language:  this.children[0]};
+                });
+              });
+            });
+          }
       });
       //just created the relationship we start again the function
 
