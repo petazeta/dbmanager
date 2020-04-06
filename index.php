@@ -50,7 +50,7 @@ require('includes/database_tables.php');
 
           var languageSensitive=false;
           for (var i=0; i<tablesmother.children.length; i++) {
-            if (tablesmother.children[i].properties.name=="<?php if (defined(TABLE_LANGUAGES)) { echo TABLE_LANGUAGES;  }?>") {
+            if (tablesmother.children[i].properties.name=="<?php if (defined('TABLE_LANGUAGES')) { echo TABLE_LANGUAGES;  }?>") {
               languageSensitive=true;
               break;
             }
