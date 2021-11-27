@@ -1,0 +1,7 @@
+{
+  "host": "localhost",
+  "user": "user_name",
+  "password": "mypassword",
+  "database": "mydb",
+  "dbsys": "pgsql"
+}

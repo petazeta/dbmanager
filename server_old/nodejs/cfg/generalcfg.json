@@ -1,0 +1,5 @@
+{
+  "themesPath": "./client/themes",
+  "serverPort": "8080",
+  "masterPassword": "$2y$10$NKXLi/BalpfosYj2btEkjO7KZxvIX/bBJx1uPVieALynD/LUEP3pe"
+}
